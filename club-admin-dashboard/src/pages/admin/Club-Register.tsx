@@ -1,12 +1,11 @@
+// src/pages/admin/Club-Register.tsx
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link } from "react-router-dom"; // Assuming you have Link for navigation
 
-// Assuming you have a list of Zambian provinces and leagues
 const ZAMBIAN_PROVINCES = [
   "Central",
   "Copperbelt",
@@ -30,13 +29,11 @@ const ZAMBIAN_LEAGUES = [
 
 const API_BASE_URL = "/api";
 
-export default function AuthPage() {
-  const [view, setView] = useState("register"); // 'register' or 'login'
-
-  // State for all the new club fields
+export default function ClubRegister() {
+  // Club fields
   const [clubName, setClubName] = useState("");
   const [clubAbbreviation, setClubAbbreviation] = useState("");
-  const [clubLogo, setClubLogo] = useState(null);
+  const [clubLogo, setClubLogo] = useState<File | null>(null);
   const [homeStadium, setHomeStadium] = useState("");
   const [province, setProvince] = useState("");
   const [foundingYear, setFoundingYear] = useState("");
@@ -50,7 +47,7 @@ export default function AuthPage() {
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [socialMediaLinks, setSocialMediaLinks] = useState("");
 
-  // State for the administrative user account
+  // Admin account fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -59,11 +56,9 @@ export default function AuthPage() {
 
   const navigate = useNavigate();
 
-  const handleHome = () => {
-    navigate("/");
-  };
+  const handleHome = () => navigate("/");
 
-  const handleRegistrationSubmit = async (e) => {
+  const handleRegistrationSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
@@ -94,9 +89,11 @@ export default function AuthPage() {
       formData.append("email", email);
       formData.append("password", password);
 
-      const response = await fetch(`${API_BASE_URL}/club/register`, {
+      // 🔗 clubs-panel registration endpoint (make sure backend route exists)
+      const response = await fetch(`${API_BASE_URL}/clubs-panel/club/register`, {
         method: "POST",
         body: formData,
+        credentials: "include",
       });
 
       const data = await response.json();
@@ -107,14 +104,14 @@ export default function AuthPage() {
         return;
       }
 
-      // Store the club data with the uploaded logo URL (if available)
-      const clubData = {
+      // Store minimal club data for quick header usage
+      const miniClub = {
         name: clubName,
         logo: clubLogo ? URL.createObjectURL(clubLogo) : null,
       };
-      localStorage.setItem("clubData", JSON.stringify(clubData));
+      localStorage.setItem("clubData", JSON.stringify(miniClub));
 
-      // Clear the form fields and switch to login view on successful registration
+      // Clear form
       setClubName("");
       setClubAbbreviation("");
       setClubLogo(null);
@@ -133,65 +130,19 @@ export default function AuthPage() {
       setEmail("");
       setPassword("");
 
-      setView("login");
-      setError("Registration successful. Please log in.");
-
-    } catch (err) {
+      // Navigate to Clubs login with flash
+      navigate("/clubs/login", {
+        state: { flash: "Registration successful. Please log in." },
+      });
+    } catch {
       setError("Network error. Please try again.");
     }
     setIsLoading(false);
   };
 
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
-
-    if (!email || !password) {
-      setError("Please enter both email and password.");
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Login failed. Please check your credentials.");
-        setIsLoading(false);
-        return;
-      }
-      
-
-      // Fetch real club info by email from backend
-      localStorage.removeItem("clubData");
-      const clubRes = await fetch(`/api/clubs/by-email/${encodeURIComponent(email)}`, {
-        headers: { Authorization: `Bearer ${data.token}` },
-      });
-      const clubData = await clubRes.json();
-      if (!clubRes.ok) throw new Error(clubData.message || "Failed to fetch club info");
-      localStorage.setItem("clubData", JSON.stringify({
-        name: clubData.clubName,
-        logo: clubData.clubLogo,
-        id: clubData._id,
-      }));
-      navigate("/dashboard");
-
-    } catch (err) {
-      setError("Network error. Please try again.");
-    }
-    setIsLoading(false);
-  };
-
-  const renderForm = () => {
-    if (view === "register") {
-      return (
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-950 p-4">
+      <Card className="w-full max-w-2xl bg-gray-900 text-white border border-gray-700 rounded-xl shadow-lg">
         <form onSubmit={handleRegistrationSubmit} className="space-y-6">
           <CardHeader className="text-center pb-4">
             <CardTitle className="text-3xl font-bold text-gray-100">
@@ -201,10 +152,13 @@ export default function AuthPage() {
               Register your football club with all its details.
             </p>
           </CardHeader>
+
           <CardContent>
-            {/* Club Information Section */}
+            {/* Club Information */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-300 mb-2 border-b border-gray-700 pb-1">Club Information</h3>
+              <h3 className="text-lg font-semibold text-gray-300 mb-2 border-b border-gray-700 pb-1">
+                Club Information
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="clubName" className="text-white">Club Name *</Label>
@@ -266,7 +220,7 @@ export default function AuthPage() {
                     className="w-full p-2 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
                     <option value="">Select Province</option>
-                    {ZAMBIAN_PROVINCES.map(p => (
+                    {ZAMBIAN_PROVINCES.map((p) => (
                       <option key={p} value={p}>{p}</option>
                     ))}
                   </select>
@@ -281,7 +235,7 @@ export default function AuthPage() {
                     className="w-full p-2 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
                     <option value="">Select League</option>
-                    {ZAMBIAN_LEAGUES.map(l => (
+                    {ZAMBIAN_LEAGUES.map((l) => (
                       <option key={l} value={l}>{l}</option>
                     ))}
                   </select>
@@ -289,9 +243,11 @@ export default function AuthPage() {
               </div>
             </div>
 
-            {/* Sporting Details Section */}
+            {/* Sporting Details */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-300 mb-2 border-b border-gray-700 pb-1">Sporting Details</h3>
+              <h3 className="text-lg font-semibold text-gray-300 mb-2 border-b border-gray-700 pb-1">
+                Sporting Details
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="currentLeaguePosition" className="text-white">Current League Position</Label>
@@ -336,9 +292,11 @@ export default function AuthPage() {
               </div>
             </div>
 
-            {/* Administrative & Contact Section */}
+            {/* Administrative & Contact */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-300 mb-2 border-b border-gray-700 pb-1">Administrative & Contact</h3>
+              <h3 className="text-lg font-semibold text-gray-300 mb-2 border-b border-gray-700 pb-1">
+                Administrative & Contact
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="presidentName" className="text-white">President's Name</Label>
@@ -384,9 +342,11 @@ export default function AuthPage() {
               </div>
             </div>
 
-            {/* Account Creation Section */}
+            {/* Create Admin Account */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-300 mb-2 border-b border-gray-700 pb-1">Create Admin Account</h3>
+              <h3 className="text-lg font-semibold text-gray-300 mb-2 border-b border-gray-700 pb-1">
+                Create Admin Account
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-white">Admin Email *</Label>
@@ -402,14 +362,15 @@ export default function AuthPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-white">Password *</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="bg-gray-700 text-white placeholder-gray-500 border-gray-600 focus:border-blue-500"
-                  />
+                 <Input
+  id="password"
+  type="password"
+  required
+  minLength={6}             // ⬅️ add this
+  value={password}
+  onChange={(e) => setPassword(e.target.value)}
+  className="bg-gray-700 text-white placeholder-gray-500 border-gray-600 focus:border-blue-500"
+/>
                 </div>
               </div>
             </div>
@@ -417,6 +378,7 @@ export default function AuthPage() {
             {error && (
               <p className="text-sm text-red-400 font-medium text-center">{error}</p>
             )}
+
             <Button
               type="submit"
               className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200"
@@ -424,81 +386,23 @@ export default function AuthPage() {
             >
               {isLoading ? "Registering..." : "Register Club"}
             </Button>
+
             <div className="mt-4 text-center text-sm text-gray-400">
               Already have an account?{" "}
-              <button type="button" onClick={() => setView("login")} className="underline text-blue-400 hover:text-blue-600 bg-transparent border-none p-0 cursor-pointer">
+              <Link to="/clubs/login" className="underline text-blue-400 hover:text-blue-600">
                 Log in
-              </button>
+              </Link>
             </div>
           </CardContent>
         </form>
-      );
-    } else {
-      return (
-        <form onSubmit={handleLoginSubmit} className="space-y-6">
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="text-3xl font-bold text-gray-100">
-              Club Login
-            </CardTitle>
-            <p className="text-sm text-gray-400 mt-1">
-              Log in to your club's administrative dashboard.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-white">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="mister.faz@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="bg-gray-700 text-white placeholder-gray-500 border-gray-600 focus:border-blue-500"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-white">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="bg-gray-700 text-white placeholder-gray-500 border-gray-600 focus:border-blue-500"
-                />
-              </div>
-            </div>
-            {error && (
-              <p className="text-sm text-red-400 font-medium text-center mt-4">{error}</p>
-            )}
-            <Button
-              type="submit"
-              className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200"
-              disabled={isLoading}
-            >
-              {isLoading ? "Logging in..." : "Log In"}
-            </Button>
-            <div className="mt-4 text-center text-sm text-gray-400">
-              Don't have an account?{" "}
-              <button type="button" onClick={() => setView("register")} className="underline text-blue-400 hover:text-blue-600 bg-transparent border-none p-0 cursor-pointer">
-                Register
-              </button>
-            </div>
-          </CardContent>
-        </form>
-      );
-    }
-  };
-
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-950 p-4">
-      <Card className="w-full max-w-2xl bg-gray-900 text-white border border-gray-700 rounded-xl shadow-lg">
-        {renderForm()}
       </Card>
+
       <div className="absolute top-4 right-4">
-        <Button onClick={handleHome} variant="outline" className="bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700">
+        <Button
+          onClick={handleHome}
+          variant="outline"
+          className="bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700"
+        >
           Home
         </Button>
       </div>

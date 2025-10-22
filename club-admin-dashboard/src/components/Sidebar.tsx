@@ -78,17 +78,19 @@ export default function Sidebar() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("jwt");
-    localStorage.removeItem("clubData"); // Clear club data on logout
-
-    // Clear all cookies (including sidebar state)
-    document.cookie.split(";").forEach((c) => {
-      document.cookie = c
-        .replace(/^ +/, "")
-        .replace(/=.*/, "=;expires=" + new Date(0).toUTCString() + ";path=/");
-    });
-
-    navigate("/auth");
+    // Call backend to clear JWT cookie
+    fetch("/api/auth/logout", { method: "POST", credentials: "include" })
+      .then(() => {
+        localStorage.removeItem("jwt");
+        localStorage.removeItem("clubData"); // Clear club data on logout
+        // Optionally clear all cookies
+        document.cookie.split(";").forEach((c) => {
+          document.cookie = c
+            .replace(/^ +/, "")
+            .replace(/=.*/, "=;expires=" + new Date(0).toUTCString() + ";path=/");
+        });
+        navigate("/"); // Redirect to login
+      });
   };
 
   return (

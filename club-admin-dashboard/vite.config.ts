@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
   const API_TARGET = env.VITE_API_PROXY_TARGET || "http://localhost:5000";
 
   return {
-    base: "/club/", // ← IMPORTANT: app is served at /club in production
+    base: "", // ← IMPORTANT: app is served at /club in production
     server: {
       host: "::",
       port: 5175,          // dev port for club (change if you prefer 8080)

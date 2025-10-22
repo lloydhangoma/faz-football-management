@@ -1,210 +1,218 @@
 import { useEffect, useState } from "react";
-import { Search, Plus, Eye, Edit, ArrowLeft } from "lucide-react";
+import { Search, Plus, Eye, ArrowLeft, Edit, FileText, CheckCircle, XCircle, Clock, User, Shield, Activity, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { useNavigate, useParams } from "react-router-dom";
+import { AddPlayerModal } from "@/components/AddPlayerModal";
 
 const API_BASE_URL = "/api";
 
+interface Player {
+  _id: string;
+  name: string;
+  age: number;
+  dateOfBirth: string;
+  nrc: string;
+  leagueRegistrationNumber?: string;
+  fazId?: string;
+  cafId?: string;
+  fifaId?: string;
+  position: string;
+  status: string;
+  nationality: string;
+  phone: string;
+  email: string;
+  avatar?: string;
+  club: any;
+  physicalAttributes?: {
+    height?: number;
+    weight?: number;
+    preferredFoot?: string;
+    bloodType?: string;
+  };
+  emergencyContact: {
+    name: string;
+    relationship: string;
+    phone: string;
+    email?: string;
+    address?: string;
+  };
+  currentStatus: {
+    registrationStatus: string;
+    eligibilityStatus: string;
+    lastVerificationDate: string;
+    verificationNotes?: string;
+  };
+  documents: {
+    [key: string]: {
+      filename?: string;
+      path?: string;
+      uploadDate?: string;
+      verified?: boolean;
+      verificationDate?: string;
+    };
+  };
+  stats: {
+    goals: number;
+    assists: number;
+    appearances: number;
+    yellowCards: number;
+    redCards: number;
+  };
+  careerStats: {
+    totalGoals: number;
+    totalAssists: number;
+    totalAppearances: number;
+    totalYellowCards: number;
+    totalRedCards: number;
+  };
+  movementHistory: Array<{
+    action: string;
+    date: string;
+    reason: string;
+    notes?: string;
+    status: string;
+  }>;
+  joined: string;
+  valuation?: number;
+  contractExpiry?: string;
+  documentCompleteness?: {
+    total: number;
+    uploaded: number;
+    percentage: number;
+    missing: string[];
+  };
+}
+
 export default function Players() {
-  // Router hooks
   const navigate = useNavigate();
   const { playerId } = useParams();
 
-  // Core UI state (always declared in the same order)
+  // Core state
   const [searchTerm, setSearchTerm] = useState("");
-  const [players, setPlayers] = useState<any[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
-
-  // Edit player state
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editPlayer, setEditPlayer] = useState<any | null>(null);
-  const [editForm, setEditForm] = useState<any>({});
-  const [editLoading, setEditLoading] = useState(false);
-  const [editError, setEditError] = useState("");
-
-  // Add player state
-  const [addModalOpen, setAddModalOpen] = useState(false);
-  const [addForm, setAddForm] = useState<any>({});
-  const [addFile, setAddFile] = useState<File | null>(null);
-  const [addLoading, setAddLoading] = useState(false);
-  const [addError, setAddError] = useState("");
-  // Delete player state (always declared)
-  const [deleteLoading, setDeleteLoading] = useState(false);
-  const [deleteError, setDeleteError] = useState("");
-  // Handle file input change for avatar
-  const handleAddFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setAddFile(e.target.files[0]);
-    }
-  };
-
-  useEffect(() => {
-    const fetchPlayers = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/players`);
-        const data = await res.json();
-        setPlayers(data);
-      } catch (err) {
-        setError("Failed to fetch players.");
-      }
-      setLoading(false);
-    };
-    fetchPlayers();
-  }, []);
-
-  // Derived values (pure, not hooks)
-  const selectedPlayer = playerId ? players.find((p) => p._id === playerId) : null;
-
-  // Get user role and club from localStorage (safe, synchronous)
-  let userRole = "club-admin";
-  let userClub = "";
-  try {
-    const clubDataRaw = localStorage.getItem("clubData");
-    if (clubDataRaw) {
-      const clubData = JSON.parse(clubDataRaw);
-      userClub = clubData?.name || "";
-    }
-    userRole = localStorage.getItem("userRole") || "club-admin";
-  } catch (e) {
-    /* ignore parse errors */
-  }
-
-  const filteredPlayers = players.filter((player) => {
-    const q = searchTerm.toLowerCase();
-    return (
-      player.name?.toLowerCase().includes(q) ||
-      String(player.nrc || "").includes(searchTerm) ||
-      player.position?.toLowerCase().includes(q)
-    );
+  const [filters, setFilters] = useState({
+    status: "",
+    position: "",
+    nationality: "",
+    registrationStatus: "",
+    eligibilityStatus: ""
   });
 
-  if (loading) {
-    return <div className="p-8">Loading players...</div>;
-  }
-  if (error) {
-    return <div className="p-8 text-red-500">{error}</div>;
-  }
+  // Modal state
+  const [addModalOpen, setAddModalOpen] = useState(false);
 
-  // Open modal and set form data
-  const handleEditClick = (player: any) => {
-    setEditPlayer(player);
-    setEditForm({ ...player });
-    setEditModalOpen(true);
-    setEditError("");
-  };
-
-  // Handle form changes
-  const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEditForm({ ...editForm, [e.target.name]: e.target.value });
-  };
-
-  // Submit update
-  const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setEditLoading(true);
-    setEditError("");
-    try {
-      const res = await fetch(`${API_BASE_URL}/players/${editPlayer._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editForm),
-      });
-      if (!res.ok) throw new Error("Failed to update player.");
-      // Refresh player list/profile
-      setEditModalOpen(false);
-      setEditPlayer(null);
-      setEditForm({});
-      // Optionally, refetch players
-      const updatedRes = await fetch(`${API_BASE_URL}/players`);
-      setPlayers(await updatedRes.json());
-    } catch (err: any) {
-      setEditError(err.message || "Update failed.");
-    }
-    setEditLoading(false);
-  };
+  // Player detail state
+  const [selectedPlayerDetails, setSelectedPlayerDetails] = useState<any>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem("jwt");
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
-  // Handle add form changes
-  const handleAddFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAddForm({ ...addForm, [e.target.name]: e.target.value });
-  };
+  useEffect(() => {
+    fetchPlayers();
+    // eslint-disable-next-line
+  }, [filters, searchTerm]);
 
-  // Submit new player
-  const handleAddSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAddLoading(true);
-    setAddError("");
+  const fetchPlayers = async () => {
     try {
-      const formData = new FormData();
-      Object.entries(addForm).forEach(([key, value]) => {
-        formData.append(key, value as string);
+      setLoading(true);
+      const queryParams = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) queryParams.append(key, value);
       });
-      if (addFile) {
-        formData.append("avatar", addFile);
-      }
-      const res = await fetch(`${API_BASE_URL}/players`, {
-        method: "POST",
-        headers: {
-          ...getAuthHeaders(), // Do NOT set Content-Type, browser will set it for FormData
-        },
-        body: formData,
-      });
-      if (!res.ok) throw new Error("Failed to add player.");
-      setAddModalOpen(false);
-      setAddForm({});
-      setAddFile(null);
-      // Optionally, refetch players
-      const updatedRes = await fetch(`${API_BASE_URL}/players`);
-      setPlayers(await updatedRes.json());
-    } catch (err: any) {
-      setAddError(err.message || "Add failed.");
-    }
-    setAddLoading(false);
-  };
+      if (searchTerm) queryParams.append('search', searchTerm);
 
-  // Permission helper
-  const canDelete = Boolean(
-    selectedPlayer &&
-      (userRole === "super-admin" || (userRole === "club-admin" && selectedPlayer.status !== "Active" && selectedPlayer.club === userClub))
-  );
-
-  const handleDelete = async () => {
-    if (!selectedPlayer) return;
-    if (!window.confirm("Are you sure you want to deregister this player?")) return;
-    setDeleteLoading(true);
-    setDeleteError("");
-    try {
-      const res = await fetch(`${API_BASE_URL}/players/${selectedPlayer._id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
+      const res = await fetch(`${API_BASE_URL}/players?${queryParams}`, {
+        headers: getAuthHeaders()
       });
+
+      if (!res.ok) throw new Error('Failed to fetch players');
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to delete player.");
-      setPlayers((prev) => prev.filter((p) => p._id !== selectedPlayer._id));
-      navigate("/dashboard/players");
+      setPlayers(data.players || data);
     } catch (err: any) {
-      setDeleteError(err.message || "Delete failed.");
+      setError(err.message || "Failed to fetch players.");
+    } finally {
+      setLoading(false);
     }
-    setDeleteLoading(false);
   };
 
-  if (selectedPlayer) {
+  const fetchPlayerDetails = async (playerId: string) => {
+    try {
+      setDetailsLoading(true);
+      const res = await fetch(`${API_BASE_URL}/players/${playerId}`, {
+        headers: getAuthHeaders()
+      });
+
+      if (!res.ok) throw new Error('Failed to fetch player details');
+
+      const data = await res.json();
+      setSelectedPlayerDetails(data);
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch player details.");
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (playerId) {
+      fetchPlayerDetails(playerId);
+    }
+    // eslint-disable-next-line
+  }, [playerId]);
+
+  const selectedPlayer = playerId ? players.find((p) => p._id === playerId) : null;
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'active': return 'default';
+      case 'pending approval': return 'secondary';
+      case 'suspended': return 'destructive';
+      case 'retired': return 'outline';
+      default: return 'secondary';
+    }
+  };
+
+  const getEligibilityBadgeVariant = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'eligible': return 'default';
+      case 'under review': return 'secondary';
+      case 'ineligible': return 'destructive';
+      case 'conditional': return 'outline';
+      default: return 'secondary';
+    }
+  };
+
+  if (loading) {
+    return <div className="p-8">Loading players...</div>;
+  }
+
+  if (error) {
+    return <div className="p-8 text-red-500">{error}</div>;
+  }
+
+  // Player Detail View
+  if (selectedPlayer && selectedPlayerDetails) {
+    const details = selectedPlayerDetails.player || selectedPlayerDetails;
+
     return (
       <div className="flex-1">
-        {/* Header */}
         <header className="bg-card border-b px-8 py-6">
           <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/dashboard/players')} // Updated path
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/dashboard/players')}
               className="text-primary hover:text-primary/80"
             >
               <ArrowLeft size={16} className="mr-2" />
@@ -212,141 +220,438 @@ export default function Players() {
             </Button>
             <div>
               <h1 className="text-2xl font-bold text-foreground">Player Profile</h1>
-              <p className="text-muted-foreground mt-1">{selectedPlayer.name} - Detailed Information</p>
+              <p className="text-muted-foreground mt-1">{details.name} - Professional Registration Details</p>
             </div>
           </div>
         </header>
 
-        {/* Player Profile Content */}
         <main className="flex-1 p-8">
-          <div className="max-w-4xl mx-auto space-y-8">
+          <div className="max-w-6xl mx-auto space-y-8">
             {/* Profile Header */}
             <Card>
               <CardContent className="p-8">
                 <div className="flex items-start gap-8">
                   <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg overflow-hidden">
-                    {selectedPlayer.avatar ? (
+                    {details.avatar ? (
                       <img
-                        src={selectedPlayer.avatar.startsWith('/') ? selectedPlayer.avatar : `/lovable-uploads/${selectedPlayer.avatar}`}
-                        alt={selectedPlayer.name}
+                        src={details.avatar.startsWith('/') ? details.avatar : `/player-documents/${details.avatar}`}
+                        alt={details.name}
                         className="w-full h-full object-cover rounded-full"
                       />
                     ) : (
                       <span className="text-3xl font-bold text-primary-foreground">
-                        {selectedPlayer.name.split(' ').map(n => n[0]).join('')}
+                        {details.name.split(' ').map(n => n[0]).join('')}
                       </span>
                     )}
                   </div>
                   <div className="flex-1">
-                    <h1 className="text-3xl font-bold text-foreground mb-2">{selectedPlayer.name}</h1>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                    <h1 className="text-3xl font-bold text-foreground mb-2">{details.name}</h1>
+                    <div className="grid grid-cols-3 gap-4 text-sm mb-4">
                       <div>
                         <span className="text-muted-foreground">Position:</span>
-                        <span className="ml-2 font-medium">{selectedPlayer.position}</span>
+                        <span className="ml-2 font-medium">{details.position}</span>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Age:</span>
-                        <span className="ml-2 font-medium">{selectedPlayer.age}</span>
+                        <span className="ml-2 font-medium">{details.age}</span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Club:</span>
-                        <span className="ml-2 font-medium">{selectedPlayer.club}</span>
+                        <span className="text-muted-foreground">Nationality:</span>
+                        <span className="ml-2 font-medium">{details.nationality}</span>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground">Status:</span>
-                        <Badge 
-                          variant={selectedPlayer.status === 'Active' ? 'default' : 'destructive'}
-                          className={selectedPlayer.status === 'Active' ? 'bg-success text-success-foreground ml-2' : 'ml-2'}
-                        >
-                          {selectedPlayer.status}
+                    </div>
+                    <div className="flex gap-4 mb-4">
+                      <Badge variant={getStatusBadgeVariant(details.currentStatus?.registrationStatus || details.status)}>
+                        {details.currentStatus?.registrationStatus || details.status}
+                      </Badge>
+                      <Badge variant={getEligibilityBadgeVariant(details.currentStatus?.eligibilityStatus || 'Under Review')}>
+                        {details.currentStatus?.eligibilityStatus || 'Under Review'}
+                      </Badge>
+                      {details.documentCompleteness && (
+                        <Badge variant={details.documentCompleteness.percentage >= 80 ? 'default' : 'secondary'}>
+                          Documents: {details.documentCompleteness.percentage}%
                         </Badge>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Personal Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">National Registration Card</label>
-                    <p className="text-foreground font-medium">{selectedPlayer.nrc}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Nationality</label>
-                    <p className="text-foreground font-medium">{selectedPlayer.nationality}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Phone</label>
-                    <p className="text-foreground font-medium">{selectedPlayer.phone}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Email</label>
-                    <p className="text-foreground font-medium">{selectedPlayer.email}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Date Joined</label>
-                    <p className="text-foreground font-medium">{new Date(selectedPlayer.joined).toLocaleDateString()}</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Career History</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="border-l-2 border-primary pl-4">
-                      <h4 className="font-semibold text-foreground">{selectedPlayer.club}</h4>
-                      <p className="text-sm text-muted-foreground">Current Club • {new Date(selectedPlayer.joined).toLocaleDateString()} - Present</p>
-                      <p className="text-sm text-muted-foreground">Position: {selectedPlayer.position}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
 
-            {/* Action Buttons */}
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex gap-4">
-                  <Button className="bg-primary hover:bg-primary/90" onClick={() => handleEditClick(selectedPlayer)}>
-                    <Edit size={16} className="mr-2" />
-                    Edit Profile
-                  </Button>
-                  <Button variant="outline">
-                    Disciplinary Records
-                  </Button>
-                  <Button variant="outline">
-                    Transfer History
-                  </Button>
-                  {canDelete && (
-                    <Button variant="destructive" onClick={handleDelete} disabled={deleteLoading}>
-                      {deleteLoading ? 'Deleting...' : 'Deregister Player'}
-                    </Button>
-                  )}
+            {/* Tabbed Content */}
+            <Tabs defaultValue="personal" className="w-full">
+              <TabsList className="grid w-full grid-cols-6">
+                <TabsTrigger value="personal" className="flex items-center gap-2">
+                  <User size={16} />
+                  Personal
+                </TabsTrigger>
+                <TabsTrigger value="registration" className="flex items-center gap-2">
+                  <Shield size={16} />
+                  Registration
+                </TabsTrigger>
+                <TabsTrigger value="documents" className="flex items-center gap-2">
+                  <FileText size={16} />
+                  Documents
+                </TabsTrigger>
+                <TabsTrigger value="stats" className="flex items-center gap-2">
+                  <Activity size={16} />
+                  Statistics
+                </TabsTrigger>
+                <TabsTrigger value="history" className="flex items-center gap-2">
+                  <History size={16} />
+                  History
+                </TabsTrigger>
+                <TabsTrigger value="actions">Actions</TabsTrigger>
+              </TabsList>
+
+              {/* --- Personal Tab --- */}
+              <TabsContent value="personal" className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Personal Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Full Name</Label>
+                        <p className="text-foreground font-medium">{details.name}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Date of Birth</Label>
+                        <p className="text-foreground font-medium">
+                          {details.dateOfBirth ? new Date(details.dateOfBirth).toLocaleDateString() : 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">National Registration Card</Label>
+                        <p className="text-foreground font-medium">{details.nrc}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Nationality</Label>
+                        <p className="text-foreground font-medium">{details.nationality}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Phone</Label>
+                        <p className="text-foreground font-medium">{details.phone}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Email</Label>
+                        <p className="text-foreground font-medium">{details.email}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Physical Attributes</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Height</Label>
+                        <p className="text-foreground font-medium">
+                          {details.physicalAttributes?.height ? `${details.physicalAttributes.height} cm` : 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Weight</Label>
+                        <p className="text-foreground font-medium">
+                          {details.physicalAttributes?.weight ? `${details.physicalAttributes.weight} kg` : 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Preferred Foot</Label>
+                        <p className="text-foreground font-medium">
+                          {details.physicalAttributes?.preferredFoot || 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Blood Type</Label>
+                        <p className="text-foreground font-medium">
+                          {details.physicalAttributes?.bloodType || 'N/A'}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Emergency Contact</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Name</Label>
+                        <p className="text-foreground font-medium">{details.emergencyContact?.name || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Relationship</Label>
+                        <p className="text-foreground font-medium">{details.emergencyContact?.relationship || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Phone</Label>
+                        <p className="text-foreground font-medium">{details.emergencyContact?.phone || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Email</Label>
+                        <p className="text-foreground font-medium">{details.emergencyContact?.email || 'N/A'}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-                {deleteError && <div className="text-red-500 text-sm mt-2">{deleteError}</div>}
-              </CardContent>
-            </Card>
+              </TabsContent>
+
+              {/* --- Registration Tab --- */}
+              <TabsContent value="registration" className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Professional Registration IDs</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">League Registration Number</Label>
+                        <p className="text-foreground font-medium">{details.leagueRegistrationNumber || 'Not Assigned'}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">FAZ ID</Label>
+                        <p className="text-foreground font-medium">{details.fazId || 'Not Assigned'}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">CAF ID</Label>
+                        <p className="text-foreground font-medium">{details.cafId || 'Not Assigned'}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">FIFA ID</Label>
+                        <p className="text-foreground font-medium">{details.fifaId || 'Not Assigned'}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Registration Status</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Registration Status</Label>
+                        <div className="mt-1">
+                          <Badge variant={getStatusBadgeVariant(details.currentStatus?.registrationStatus || 'Pending')}>
+                            {details.currentStatus?.registrationStatus || 'Pending Approval'}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Eligibility Status</Label>
+                        <div className="mt-1">
+                          <Badge variant={getEligibilityBadgeVariant(details.currentStatus?.eligibilityStatus || 'Under Review')}>
+                            {details.currentStatus?.eligibilityStatus || 'Under Review'}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Last Verification</Label>
+                        <p className="text-foreground font-medium">
+                          {details.currentStatus?.lastVerificationDate ?
+                            new Date(details.currentStatus.lastVerificationDate).toLocaleDateString() : 'Never'}
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Verification Notes</Label>
+                        <p className="text-foreground font-medium">
+                          {details.currentStatus?.verificationNotes || 'No notes'}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              {/* --- Documents Tab --- */}
+              <TabsContent value="documents" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Document Status</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {details.documentCompleteness && (
+                      <div className="mb-6 p-4 bg-muted rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium">Document Completeness</span>
+                          <Badge variant={details.documentCompleteness.percentage >= 80 ? 'default' : 'secondary'}>
+                            {details.documentCompleteness.percentage}%
+                          </Badge>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-primary h-2 rounded-full"
+                            style={{ width: `${details.documentCompleteness.percentage}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          {details.documentCompleteness.uploaded} of {details.documentCompleteness.total} required documents uploaded
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {Object.entries(details.documents || {}).map(([docType, doc]: [string, any]) => (
+                        <div key={docType} className="border rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-medium capitalize">{docType.replace(/([A-Z])/g, ' $1').trim()}</h4>
+                            {doc.verified ? (
+                              <CheckCircle className="text-green-500" size={20} />
+                            ) : doc.path ? (
+                              <Clock className="text-yellow-500" size={20} />
+                            ) : (
+                              <XCircle className="text-red-500" size={20} />
+                            )}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {doc.path ? (
+                              <>
+                                <p>Uploaded: {new Date(doc.uploadDate).toLocaleDateString()}</p>
+                                <p>Status: {doc.verified ? 'Verified' : 'Pending Verification'}</p>
+                                {doc.verificationDate && (
+                                  <p>Verified: {new Date(doc.verificationDate).toLocaleDateString()}</p>
+                                )}
+                              </>
+                            ) : (
+                              <p>Not uploaded</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* --- Statistics Tab --- */}
+              <TabsContent value="stats" className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Current Season Statistics</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Goals</Label>
+                          <p className="text-2xl font-bold text-foreground">{details.stats?.goals || 0}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Assists</Label>
+                          <p className="text-2xl font-bold text-foreground">{details.stats?.assists || 0}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Appearances</Label>
+                          <p className="text-2xl font-bold text-foreground">{details.stats?.appearances || 0}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Yellow Cards</Label>
+                          <p className="text-2xl font-bold text-yellow-500">{details.stats?.yellowCards || 0}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Career Statistics</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Total Goals</Label>
+                          <p className="text-2xl font-bold text-foreground">{details.careerStats?.totalGoals || 0}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Total Assists</Label>
+                          <p className="text-2xl font-bold text-foreground">{details.careerStats?.totalAssists || 0}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Total Appearances</Label>
+                          <p className="text-2xl font-bold text-foreground">{details.careerStats?.totalAppearances || 0}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">Total Cards</Label>
+                          <p className="text-2xl font-bold text-red-500">
+                            {(details.careerStats?.totalYellowCards || 0) + (details.careerStats?.totalRedCards || 0)}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              {/* --- History Tab --- */}
+              <TabsContent value="history" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Movement History</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {details.movementHistory?.map((movement, index) => (
+                        <div key={index} className="border-l-2 border-primary pl-4 pb-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-semibold text-foreground">{movement.action}</h4>
+                            <Badge variant={movement.status === 'Completed' ? 'default' : 'secondary'}>
+                              {movement.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(movement.date).toLocaleDateString()} • {movement.reason}
+                          </p>
+                          {movement.notes && (
+                            <p className="text-sm text-muted-foreground mt-1">{movement.notes}</p>
+                          )}
+                        </div>
+                      )) || <p className="text-muted-foreground">No movement history available</p>}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* --- Actions Tab --- */}
+              <TabsContent value="actions" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Player Actions</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex gap-4 flex-wrap">
+                      <Button className="bg-primary hover:bg-primary/90">
+                        <Edit size={16} className="mr-2" />
+                        Edit Profile
+                      </Button>
+                      <Button variant="outline">
+                        <FileText size={16} className="mr-2" />
+                        Generate Report
+                      </Button>
+                      <Button variant="outline">
+                        <History size={16} className="mr-2" />
+                        Transfer History
+                      </Button>
+                      <Button variant="outline">
+                        <Shield size={16} className="mr-2" />
+                        Verify Documents
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </div>
         </main>
       </div>
     );
   }
 
+  // Main Players List View
   return (
     <div className="flex-1">
-      {/* Header */}
       <header className="bg-card border-b px-8 py-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Player Management</h1>
-            <p className="text-muted-foreground mt-1">Manage all registered players in the FAZ system</p>
+            <p className="text-muted-foreground mt-1">Professional player registration and management system</p>
           </div>
           <Button className="bg-primary hover:bg-primary/90" onClick={() => setAddModalOpen(true)}>
             <Plus size={16} className="mr-2" />
@@ -355,7 +660,6 @@ export default function Players() {
         </div>
       </header>
 
-      {/* Content */}
       <main className="flex-1 p-8">
         <Card>
           <CardHeader>
@@ -371,28 +675,42 @@ export default function Players() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                <select className="px-3 py-2 border rounded-lg text-sm bg-background">
-                  <option>All Status</option>
-                  <option>Active</option>
-                  <option>Banned</option>
-                  <option>Injured</option>
-                </select>
+                <Select value={filters.status || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value === "all" ? "" : value }))}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="All Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Pending Approval">Pending</SelectItem>
+                    <SelectItem value="Suspended">Suspended</SelectItem>
+                    <SelectItem value="Retired">Retired</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" onClick={fetchPlayers}>
+                  Refresh
+                </Button>
               </div>
             </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {filteredPlayers.map((player) => (
+              {players.length === 0 && (
+                <div className="text-center text-muted-foreground py-8">
+                  No players found.
+                </div>
+              )}
+              {players.map((player) => (
                 <div 
                   key={player._id} 
                   className="flex items-center justify-between p-6 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                  onClick={() => navigate(`/dashboard/players/${player._id}`)} // Updated path
+                  onClick={() => navigate(`/dashboard/players/${player._id}`)}
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md overflow-hidden">
                       {player.avatar ? (
                         <img
-                          src={player.avatar.startsWith('/') ? player.avatar : `/lovable-uploads/${player.avatar}`}
+                          src={player.avatar.startsWith('/') ? player.avatar : `/player-documents/${player.avatar}`}
                           alt={player.name}
                           className="w-full h-full object-cover rounded-full"
                           onError={e => { e.currentTarget.style.display = 'none'; }}
@@ -413,23 +731,31 @@ export default function Players() {
                         <span>{player.position}</span>
                         <span>•</span>
                         <span>Age: {player.age}</span>
+                        {player.leagueRegistrationNumber && (
+                          <>
+                            <span>•</span>
+                            <span>LRN: {player.leagueRegistrationNumber}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <Badge 
-                      variant={player.status === 'Active' ? 'default' : 'destructive'}
-                      className={player.status === 'Active' ? 'bg-success text-success-foreground' : ''}
-                    >
-                      {player.status}
-                    </Badge>
+                    <div className="text-right">
+                      <Badge variant={getStatusBadgeVariant(player.currentStatus?.registrationStatus || player.status)}>
+                        {player.currentStatus?.registrationStatus || player.status}
+                      </Badge>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {player.documentCompleteness && `Docs: ${player.documentCompleteness.percentage}%`}
+                      </div>
+                    </div>
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       className="text-primary hover:text-primary/80"
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/dashboard/players/${player._id}`); // Updated path
+                        navigate(`/dashboard/players/${player._id}`);
                       }}
                     >
                       <Eye size={14} className="mr-1" />
@@ -443,56 +769,12 @@ export default function Players() {
         </Card>
       </main>
 
-      {/* Edit Player Modal */}
-      {editModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-lg w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Edit Player</h2>
-            <form onSubmit={handleEditSubmit} className="space-y-4">
-              <Input name="name" value={editForm.name || ""} onChange={handleEditFormChange} placeholder="Name" />
-              <Input name="age" value={editForm.age || ""} onChange={handleEditFormChange} placeholder="Age" type="number" />
-              <Input name="nrc" value={editForm.nrc || ""} onChange={handleEditFormChange} placeholder="NRC" />
-              <Input name="position" value={editForm.position || ""} onChange={handleEditFormChange} placeholder="Position" />
-              <Input name="club" value={editForm.club || ""} onChange={handleEditFormChange} placeholder="Club" />
-              <Input name="nationality" value={editForm.nationality || ""} onChange={handleEditFormChange} placeholder="Nationality" />
-              <Input name="phone" value={editForm.phone || ""} onChange={handleEditFormChange} placeholder="Phone" />
-              <Input name="email" value={editForm.email || ""} onChange={handleEditFormChange} placeholder="Email" />
-              <div className="flex gap-2">
-                <Button type="submit" disabled={editLoading} className="bg-primary text-white">{editLoading ? "Saving..." : "Save"}</Button>
-                <Button type="button" variant="outline" onClick={() => setEditModalOpen(false)}>Cancel</Button>
-              </div>
-              {editError && <div className="text-red-500 text-sm">{editError}</div>}
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Add Player Modal */}
-      {addModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-lg w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Register New Player</h2>
-            <form onSubmit={handleAddSubmit} className="space-y-4" encType="multipart/form-data">
-              {/* Required fields for Player model */}
-              <Input name="name" value={addForm.name || ""} onChange={handleAddFormChange} placeholder="Name" required />
-              <Input name="age" value={addForm.age || ""} onChange={handleAddFormChange} placeholder="Age" type="number" required />
-              <Input name="nrc" value={addForm.nrc || ""} onChange={handleAddFormChange} placeholder="NRC" required />
-              <Input name="position" value={addForm.position || ""} onChange={handleAddFormChange} placeholder="Position" required />
-              <Input name="joined" value={addForm.joined || ""} onChange={handleAddFormChange} placeholder="Date Joined" type="date" required />
-              {/* Optional fields */}
-              <Input name="nationality" value={addForm.nationality || ""} onChange={handleAddFormChange} placeholder="Nationality" />
-              <Input name="phone" value={addForm.phone || ""} onChange={handleAddFormChange} placeholder="Phone" />
-              <Input name="email" value={addForm.email || ""} onChange={handleAddFormChange} placeholder="Email" />
-              <Input type="file" name="avatar" accept="image/*" onChange={handleAddFileChange} />
-              <div className="flex gap-2">
-                <Button type="submit" disabled={addLoading} className="bg-primary text-white">{addLoading ? "Saving..." : "Save"}</Button>
-                <Button type="button" variant="outline" onClick={() => setAddModalOpen(false)}>Cancel</Button>
-              </div>
-              {addError && <div className="text-red-500 text-sm">{addError}</div>}
-            </form>
-          </div>
-        </div>
-      )}
+      <AddPlayerModal
+        isOpen={addModalOpen}
+        onOpenChange={setAddModalOpen}
+        onPlayerAdded={fetchPlayers}
+      />
     </div>
   );
 }

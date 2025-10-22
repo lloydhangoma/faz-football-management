@@ -16,7 +16,8 @@ import {
   Database,
   ChevronDown,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { API } from "@/api/client"; // ⬅️ added
 
 // Cloudinary FAZ logo (replace anytime)
 const LOGO_URL =
@@ -34,7 +35,8 @@ const menuItems = [
     label: "CLUB MANAGEMENT",
     items: [
       { label: "Club Directory", icon: Building2, path: "/clubs" },
-      { label: "Club Applications", icon: FileCheck, path: "/club-applications", badge: "5" },
+      // ⬇️ removed hard-coded "5" badge; we'll render a live badge below
+      { label: "Club Applications", icon: FileCheck, path: "/club-applications" },
     ],
   },
   {
@@ -82,6 +84,31 @@ export default function Sidebar(): JSX.Element {
     "system",
   ]);
 
+  // 🔴 live pending count (under-review + pending-docs)
+  const [pendingApps, setPendingApps] = useState<number>(0);
+
+  useEffect(() => {
+    let alive = true;
+
+    const fetchCounts = async () => {
+      try {
+        const { data } = await API.get("/club-applications/_counts");
+        const pending =
+          (data?.underReview || 0) + (data?.pendingDocs || 0);
+        if (alive) setPendingApps(pending);
+      } catch {
+        // silent fail is fine for a badge
+      }
+    };
+
+    fetchCounts();
+    const id = setInterval(fetchCounts, 30000); // poll every 30s
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, []);
+
   const toggleSection = (sectionId: string) => {
     setExpandedSections((prev) =>
       prev.includes(sectionId)
@@ -90,8 +117,16 @@ export default function Sidebar(): JSX.Element {
     );
   };
 
+  // tiny pill renderer; hides when 0/empty
+  const BadgePill = ({ value }: { value?: number | string }) =>
+    value && String(value) !== "0" ? (
+      <span className="ml-auto bg-destructive text-destructive-foreground text-xs px-1.5 py-0.5 rounded-full">
+        {value}
+      </span>
+    ) : null;
+
   return (
- <div className="w-64 bg-sidebar border-r border-sidebar-border h-screen flex flex-col">
+    <div className="w-64 bg-sidebar border-r border-sidebar-border h-screen flex flex-col">
       {/* Header with FAZ logo + title */}
       <div className="p-4 border-b border-sidebar-border">
         <Link to="/" className="flex items-center gap-3">
@@ -150,6 +185,19 @@ export default function Sidebar(): JSX.Element {
                 <div className="ml-2 space-y-1">
                   {item.items?.map((subItem) => {
                     const isActive = location.pathname === subItem.path;
+
+                    // use dynamic badge ONLY for "Club Applications"
+                    const dynamicBadge =
+                      subItem.label === "Club Applications"
+                        ? pendingApps
+                        : undefined;
+
+                    // fall back to static badge for other items
+                    const badgeValue =
+                      dynamicBadge !== undefined
+                        ? dynamicBadge
+                        : subItem.badge;
+
                     return (
                       <Link
                         key={subItem.path}
@@ -163,11 +211,7 @@ export default function Sidebar(): JSX.Element {
                       >
                         <subItem.icon className="w-4 h-4" />
                         {subItem.label}
-                        {subItem.badge && (
-                          <span className="ml-auto bg-destructive text-destructive-foreground text-xs px-1.5 py-0.5 rounded-full">
-                            {subItem.badge}
-                          </span>
-                        )}
+                        <BadgePill value={badgeValue} />
                       </Link>
                     );
                   })}

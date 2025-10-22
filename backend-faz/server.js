@@ -9,6 +9,9 @@ import connectDB from './config/db.js';
 
 // Routes
 import adminPortalLoginRoutes from './routes/AdminPortalLoginRoutes.js';
+import clubsAdminPortalLoginRoutes from './routes/Clubs-Management-Panel/Clubs-AdminPortalLoginRoutes.js';
+
+import clubAppRoutes from './routes/frontend/ClubRegistration/ApplyClubAccountRoutes.js';
 
 dotenv.config();
 await connectDB();
@@ -64,6 +67,9 @@ app.use(['/api/frontend', '/api/public'], publicLimiter);
 
 // Routes
 app.use('/api/settings', adminPortalLoginRoutes);
+app.use('/api/clubs-panel', clubsAdminPortalLoginRoutes);
+// Club Applications API
+app.use('/api/club-applications', clubAppRoutes);
 
 // Health
 app.get('/health', (_req, res) => res.send('ok'));
