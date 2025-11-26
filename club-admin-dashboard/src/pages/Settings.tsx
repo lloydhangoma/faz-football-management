@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getItem, setItem } from "@/lib/storage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,14 +19,14 @@ export default function Settings() {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('clubData');
+      const raw = getItem('clubData');
       if (raw) {
-        const parsed = JSON.parse(raw);
+        const parsed = JSON.parse(raw as string);
         setClub(parsed);
-  setWebsite(parsed.websiteUrl || '');
-  setSocialLinks(parsed.socialMediaLinks || '');
-  // support both clubLogo and logo keys that may come from different endpoints
-  setLogoPreview(parsed.clubLogo || parsed.logo || null);
+        setWebsite(parsed.websiteUrl || '');
+        setSocialLinks(parsed.socialMediaLinks || '');
+        // support both clubLogo and logo keys that may come from different endpoints
+        setLogoPreview(parsed.clubLogo || parsed.logo || null);
       }
     } catch (e) {}
   }, []);
@@ -61,7 +62,7 @@ export default function Settings() {
         websiteUrl: updated.websiteUrl || null,
         socialMediaLinks: updated.socialMediaLinks || null,
       };
-      localStorage.setItem('clubData', JSON.stringify(normalized));
+      setItem('clubData', JSON.stringify(normalized));
       setClub(normalized);
   // ensure preview updates and bypass browser cache
   const newLogo = updated.clubLogo || updated.logo || null;

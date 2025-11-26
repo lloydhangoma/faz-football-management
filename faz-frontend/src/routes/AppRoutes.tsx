@@ -5,9 +5,9 @@ import Navbar from "../components/layout/Navbar";
 // import Footer from "../components/layout/Footer";
 
 import Home from "../pages/Home";
-import Clubs from "../pages/Clubs";
-import Players from "../pages/Players";
-import Transfers from "../pages/Transfers";
+import Teams from "../pages/Team";
+import Competitions from "../pages/Competitions";
+import Fixtures from "../pages/Fixtures";
 import News from "../pages/News";
 import Statistics from "../pages/Statistics";
 import Injuries from "../pages/Injuries";
@@ -40,9 +40,9 @@ export default function AppRoutes() {
 
         {/* Other sections */}
         <Route path="/news" element={<News />} />
-        <Route path="/clubs" element={<Clubs />} />
-        <Route path="/players" element={<Players />} />
-        <Route path="/transfers" element={<Transfers />} />
+        <Route path="/Teams" element={<Teams />} />
+        <Route path="/Competitions" element={<Competitions />} />
+        <Route path="/Fixtures" element={<Fixtures />} />
         <Route path="/statistics" element={<Statistics />} />
         <Route path="/injuries" element={<Injuries />} />
         <Route path="/leagues" element={<Leagues />} />

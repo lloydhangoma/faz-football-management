@@ -1,0 +1,10 @@
+./backend-faz/controllers/TransfersController.js: * GET /api/transfers - Get transfers for the authenticated club (incoming and outgoing)
+./backend-faz/controllers/TransfersController.js:    return res.status(500).json({ ok: false, message: 'Failed to fetch transfers' });
+./backend-faz/controllers/TransfersController.js: * GET /api/transfers/:transferId - Get a single transfer
+./backend-faz/controllers/TransfersController.js: * POST /api/transfers - Create a new transfer request
+./backend-faz/controllers/TransfersController.js: * PUT /api/transfers/:transferId/accept - Accept a transfer request
+./backend-faz/controllers/TransfersController.js: * PUT /api/transfers/:transferId/reject - Reject a transfer request
+./backend-faz/controllers/TransfersController.js: * POST /api/transfers/:transferId/counter-offer - Create a counter offer
+./backend-faz/controllers/TransfersController.js: * PUT /api/transfers/:transferId/counter-offer/:offerId/accept - Accept a counter offer
+./backend-faz/controllers/TransfersController.js: * DELETE /api/transfers/:transferId - Cancel a transfer request
+./backend-faz/server.js:app.use('/api/transfers', transfersRoutes);

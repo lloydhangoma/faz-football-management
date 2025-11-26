@@ -27,8 +27,10 @@ export default function LoginPage() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      // Use the clubs-panel login which sets an httpOnly cookie (adminToken)
+      const response = await fetch(`${API_BASE_URL}/clubs-panel/admin-login`, {
         method: "POST",
+        credentials: 'include',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
@@ -40,26 +42,8 @@ export default function LoginPage() {
         setIsLoading(false);
         return;
       }
-      
-      // Save the JWT token
-      localStorage.setItem("jwt", data.token);
 
-      // Fetch real club info by email from backend
-      localStorage.removeItem("clubData");
-      const clubRes = await fetch(`/api/clubs/by-email/${encodeURIComponent(email)}`, {
-        headers: { Authorization: `Bearer ${data.token}` },
-      });
-      const clubData = await clubRes.json();
-      
-      if (!clubRes.ok) {
-        console.error(clubData.message || "Failed to fetch club info. Navigating to dashboard anyway.");
-      } else {
-        localStorage.setItem("clubData", JSON.stringify({
-          name: clubData.clubName,
-          logo: clubData.clubLogo,
-          id: clubData._id,
-        }));
-      }
+      // Auth cookie is set by server; AuthContext will pick up admin/club info.
 
       navigate("/dashboard");
 

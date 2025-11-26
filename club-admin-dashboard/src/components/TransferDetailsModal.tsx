@@ -18,6 +18,7 @@ import {
   FileText,
   TrendingUp
 } from "lucide-react";
+import { X } from "lucide-react";
 
 interface Transfer {
   _id: string;
@@ -47,10 +48,24 @@ interface Transfer {
   status: string;
   requestDate: string;
   approvalDate?: string;
+  transferRegistrationNumber?: string;
+  tmsStatus?: string;
+  itcRequestedDate?: string;
+  itcReceivedDate?: string;
+  events?: Array<{
+    _id?: string;
+    type?: string;
+    actor?: { id?: string; name?: string; role?: string };
+    timestamp?: string;
+    notes?: string;
+    attachments?: Array<{ url?: string; filename?: string }>;
+  }>;
   counterOffers: Array<{
-    amount: number;
-    proposedBy: string;
-    timestamp: string;
+    _id?: string;
+    amount?: number;
+    proposedBy?: string;
+    timestamp?: string;
+    date?: string;
   }>;
   createdAt: string;
   updatedAt: string;
@@ -64,7 +79,7 @@ interface TransferDetailsModalProps {
   onAccept: (id: string) => void;
   onReject: (id: string) => void;
   onCounterOffer: (transfer: Transfer, amount: string) => void;
-  onAcceptCounter: (id: string) => void;
+  onAcceptCounter: (transferId: string, offerId?: string) => void;
 }
 
 export default function TransferDetailsModal({
@@ -132,15 +147,21 @@ export default function TransferDetailsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <ArrowRightLeft className="text-primary" />
-            Transfer Details
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="left-0 top-0 translate-x-0 translate-y-0 w-full h-screen max-w-none p-0 rounded-none">
+        <div className="h-full w-full bg-background flex flex-col">
+          <DialogHeader className="flex items-center px-6 py-4 border-b">
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <ArrowRightLeft className="text-primary" />
+              Transfer Details
+            </DialogTitle>
+            <div className="ml-auto">
+              <button onClick={onClose} aria-label="Close" className="p-2 rounded hover:bg-muted">
+                <X size={20} />
+              </button>
+            </div>
+          </DialogHeader>
 
-        <div className="space-y-6">
+          <div className="h-full overflow-y-auto p-6 space-y-6">
           {/* Transfer Status Header */}
           <Card>
             <CardContent className="pt-6">
@@ -274,6 +295,30 @@ export default function TransferDetailsModal({
                   <span className="text-muted-foreground">Request Date:</span>
                   <span className="font-medium">{formatDate(transfer.requestDate)}</span>
                 </div>
+                  {transfer.transferRegistrationNumber && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Registration #:</span>
+                      <span className="font-medium">{transfer.transferRegistrationNumber}</span>
+                    </div>
+                  )}
+                  {transfer.tmsStatus && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">TMS Status:</span>
+                      <span className="font-medium">{transfer.tmsStatus}</span>
+                    </div>
+                  )}
+                  {transfer.itcRequestedDate && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">ITC Requested:</span>
+                      <span className="font-medium">{new Date(transfer.itcRequestedDate).toLocaleDateString()}</span>
+                    </div>
+                  )}
+                  {transfer.itcReceivedDate && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">ITC Received:</span>
+                      <span className="font-medium">{new Date(transfer.itcReceivedDate).toLocaleDateString()}</span>
+                    </div>
+                  )}
                 {transfer.deadline && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Deadline:</span>
@@ -312,7 +357,7 @@ export default function TransferDetailsModal({
                       <div>
                         <p className="font-medium">{formatCurrency(offer.amount)}</p>
                         <p className="text-sm text-muted-foreground">
-                          {formatDate(offer.timestamp)}
+                          {formatDate(offer.timestamp || offer.date)}
                         </p>
                       </div>
                       <Badge variant="outline">Counter Offer #{index + 1}</Badge>
@@ -333,6 +378,7 @@ export default function TransferDetailsModal({
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                {/* Base request event */}
                 <div className="flex items-start gap-3">
                   <div className="w-3 h-3 bg-primary rounded-full mt-2"></div>
                   <div>
@@ -343,13 +389,35 @@ export default function TransferDetailsModal({
                   </div>
                 </div>
 
-                {transfer.counterOffers.map((offer, index) => (
+                {/* Render structured events if present */}
+                {Array.isArray(transfer.events) && transfer.events.length > 0 && transfer.events.map((ev, idx) => (
+                  <div key={ev._id || idx} className="flex items-start gap-3">
+                    <div className="w-3 h-3 bg-muted rounded-full mt-2"></div>
+                    <div>
+                      <p className="font-medium">{ev.type || 'Event'}</p>
+                      <p className="text-sm text-muted-foreground">{ev.actor?.name ? `${ev.actor.name} • ${ev.actor.role || ''}` : ev.actor?.role || 'System'} • {ev.timestamp ? formatDate(ev.timestamp) : '—'}</p>
+                      {ev.notes && <p className="text-sm mt-1">{ev.notes}</p>}
+                      {Array.isArray(ev.attachments) && ev.attachments.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {ev.attachments.map((att, aidx) => (
+                            <a key={aidx} href={att.url || '#'} target="_blank" rel="noreferrer" className="px-2 py-1 bg-muted/20 rounded text-sm">
+                              {att.filename || 'attachment'}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Legacy counter offers + status markers for backward compatibility */}
+                {Array.isArray(transfer.counterOffers) && transfer.counterOffers.map((offer, index) => (
                   <div key={index} className="flex items-start gap-3">
                     <div className="w-3 h-3 bg-yellow-500 rounded-full mt-2"></div>
                     <div>
                       <p className="font-medium">Counter Offer #{index + 1}</p>
                       <p className="text-sm text-muted-foreground">
-                        Amount: {formatCurrency(offer.amount)} • {formatDate(offer.timestamp)}
+                        Amount: {formatCurrency(offer.amount)} • {formatDate(offer.timestamp || offer.date)}
                       </p>
                     </div>
                   </div>
@@ -414,7 +482,10 @@ export default function TransferDetailsModal({
 
                 {canAcceptCounter && (
                   <Button 
-                    onClick={() => onAcceptCounter(transfer._id)}
+                    onClick={() => {
+                      const latestOfferId = transfer.counterOffers?.length ? transfer.counterOffers[transfer.counterOffers.length - 1]._id : null;
+                      onAcceptCounter(transfer._id, latestOfferId);
+                    }}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
                     <CheckCircle size={16} className="mr-2" />
@@ -462,6 +533,7 @@ export default function TransferDetailsModal({
             </CardContent>
           </Card>
         </div>
+          </div>
       </DialogContent>
     </Dialog>
   );

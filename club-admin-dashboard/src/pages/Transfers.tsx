@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { getItem, removeItem } from "@/lib/storage";
 import { Search, Plus, Clock, CheckCircle, XCircle, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +13,7 @@ import TransferDetailsModal from "@/components/TransferDetailsModal";
 const API_BASE_URL = "/api";
 
 export default function Transfers() {
+  const { clubData: authClub, loading: authLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [transfers, setTransfers] = useState([]);
@@ -27,6 +30,7 @@ export default function Transfers() {
     transferWindow: "",
     deadline: ""
   });
+  const [requiredDocs, setRequiredDocs] = useState({ consent: false, contract: false });
   const [clubs, setClubs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -40,25 +44,28 @@ export default function Transfers() {
   // Transfer details modal state
   const [selectedTransfer, setSelectedTransfer] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  // Full player record fetched when a player is selected (includes documents, passport, etc.)
+  const [selectedPlayerFull, setSelectedPlayerFull] = useState(null);
+  const [consentFile, setConsentFile] = useState(null);
+  const [contractFile, setContractFile] = useState(null);
 
   // Helper function for API calls with JWT authentication
-  const fetchWithAuth = useCallback(async (url, options = {}) => {
-    const token = localStorage.getItem("jwt");
-    if (!token || token === "undefined" || token === "null" || token.trim() === "") {
-      localStorage.removeItem("jwt");
-      localStorage.removeItem("clubData");
-      console.error("Invalid JWT token in localStorage. Redirecting to login.");
-      window.location.href = "/";
-      return;
-    }
-    const headers = {
-      ...((options as any).headers || {}),
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
+  const fetchWithAuth = useCallback(async (url, options: any = {}) => {
+    // Use cookie-based auth (backend sets httpOnly cookie). Include credentials.
+    const opts = {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      ...options,
     };
-    const response = await fetch(url, { ...options, headers });
+    const response = await fetch(url, opts);
+    if (response.status === 401) {
+      // Not authenticated -> redirect to login
+      removeItem('clubData');
+      window.location.href = '/';
+      return response;
+    }
     if (response.status === 403) {
-      setError("Forbidden access. You may not have the necessary permissions.");
+      setError('Forbidden access. You may not have the necessary permissions.');
     }
     return response;
   }, []);
@@ -69,22 +76,35 @@ export default function Transfers() {
     setError("");
     try {
       const [transfersRes, playersRes, clubsRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/transfers`),
+        fetch(`${API_BASE_URL}/transfers`, { credentials: 'include' }),
         fetchWithAuth(`${API_BASE_URL}/players`),
-        fetch(`${API_BASE_URL}/clubs`)
+        // The backend does not expose a root /api/clubs list; use the admins endpoint
+        // which contains embedded club info for each club admin.
+        fetch(`/api/clubs-panel/admins`, { credentials: 'include' })
       ]);
 
       console.log("Transfers response:", transfersRes.status);
       console.log("Players response:", playersRes?.status);
       console.log("Clubs response:", clubsRes?.status);
 
+      // If any of the requests failed, log their bodies to help debugging
       if (!transfersRes?.ok || !playersRes?.ok || !clubsRes?.ok) {
+        try {
+          const tBody = transfersRes ? await transfersRes.text() : '<no transfers response>';
+          const pBody = playersRes ? await playersRes.text() : '<no players response>';
+          const cBody = clubsRes ? await clubsRes.text() : '<no clubs response>';
+          console.error('Fetch failures -> transfers:', transfersRes?.status, tBody, 'players:', playersRes?.status, pBody, 'clubs:', clubsRes?.status, cBody);
+        } catch (readErr) {
+          console.error('Error reading failed response bodies', readErr);
+        }
         throw new Error("Failed to fetch initial data.");
       }
 
       const transfersData = await transfersRes.json();
       const playersData = await playersRes.json();
-      const clubsData = await clubsRes.json();
+      const clubsDataRaw = await clubsRes.json();
+      // clubsDataRaw is { ok: true, admins: [...] } or similar — normalize to clubs array
+      const clubsData = Array.isArray(clubsDataRaw) ? clubsDataRaw : (clubsDataRaw.admins || clubsDataRaw);
 
       console.log("Players data:", playersData);
       console.log("Players array length:", Array.isArray(playersData) ? playersData.length : (playersData.players ? playersData.players.length : 'N/A'));
@@ -92,9 +112,16 @@ export default function Transfers() {
       // Handle different response formats
       const playersArray = Array.isArray(playersData) ? playersData : (playersData.players || []);
 
-      setTransfers(transfersData);
+      const transfersArray = Array.isArray(transfersData) ? transfersData : (transfersData.transfers || []);
+      setTransfers(transfersArray);
       setPlayers(playersArray);
-      setClubs(clubsData);
+      // Normalize admins -> clubs shape expected by UI
+      const clubsArray = (Array.isArray(clubsData) ? clubsData : []).map((a: any) => ({
+        _id: a._id,
+        clubName: a.club?.name || a.name || `Club ${a._id}`,
+        clubLogo: a.club?.logo?.url || a.club?.logoUrl || null,
+      }));
+      setClubs(clubsArray);
     } catch (err) {
       setError("Failed to fetch transfers, players, or clubs.");
       console.error("Fetch error:", err);
@@ -104,23 +131,55 @@ export default function Transfers() {
 
   // Combined effect to get club data from localStorage and fetch all other data
   useEffect(() => {
-    try {
-      const clubDataRaw = localStorage.getItem("clubData");
-      if (clubDataRaw) {
-        const clubData = JSON.parse(clubDataRaw);
-        setUserClubId(clubData?.id || "");  // Changed from clubId to id
-        setUserClubName(clubData?.name || "");
-        console.log("Loaded club data:", clubData);
-        console.log("User club ID set to:", clubData?.id);
-      } else {
-        console.log("No club data found in localStorage");
+    // prefer auth context for club id
+    if (authClub) {
+      setUserClubId(authClub._id || authClub.id || "");
+      setUserClubName(authClub.name || "");
+    } else {
+      // fallback to any client-side stored clubData
+      try {
+        const saved = getItem('clubData');
+        if (saved) {
+          const c = JSON.parse(saved as string);
+          setUserClubId(c.id || c._id || "");
+          setUserClubName(c.name || "");
+        }
+      } catch (e) {
+        // ignore
       }
-    } catch (err) {
-      console.error("Failed to parse club data from localStorage", err);
     }
 
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, authClub]);
+
+  // When a player is selected in the new transfer form, fetch the full player record
+  useEffect(() => {
+    let cancelled = false;
+    const pid = newTransfer.playerId;
+    if (!pid || pid === '' || pid === 'none') {
+      setSelectedPlayerFull(null);
+      return;
+    }
+
+    (async () => {
+      try {
+        const res = await fetchWithAuth(`${API_BASE_URL}/players/${pid}`);
+        if (!res || !res.ok) {
+          // keep the previously-fetched list item as fallback
+          console.warn('Failed to fetch full player details for', pid);
+          return;
+        }
+        const body = await res.json();
+        // API returns { ok: true, player } or the player directly
+        const full = body && body.player ? body.player : body;
+        if (!cancelled) setSelectedPlayerFull(full);
+      } catch (err) {
+        console.error('Error fetching player details', err);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [newTransfer.playerId, fetchWithAuth]);
 
   // Helper functions
   const getStatusColor = (status) => {
@@ -165,20 +224,43 @@ export default function Transfers() {
         deadline: newTransfer.deadline
       });
 
+      // Client-side validation: ensure player selected and required docs checked
+      if (!newTransfer.playerId) {
+        setError('Please select a player to transfer.');
+        return;
+      }
+      if (!requiredDocs.consent || !requiredDocs.contract) {
+        setError('Please confirm required documents (player consent and contract) before submitting.');
+        return;
+      }
+
+      // Determine selling club (fromClubId) from the selected player's current club
+      const playerObj = effectiveSelectedPlayer || players.find(p => p._id === newTransfer.playerId);
+      const sellerClubId = playerObj ? (playerObj.club && (playerObj.club._id || playerObj.club)) || playerObj.clubId || null : null;
+
+      if (!sellerClubId) {
+        setError('Could not determine selling club for selected player.');
+        return;
+      }
+
+      const payload = {
+        fromClubId: sellerClubId,
+        // backend uses session cookie to determine buying club; still include toClubId for clarity
+        toClubId: userClubId,
+        playerId: newTransfer.playerId,
+        amount: newTransfer.amount,
+        type: newTransfer.type,
+        contractLength: newTransfer.contractLength,
+        salary: newTransfer.salary,
+        releaseClause: newTransfer.releaseClause,
+        agentFee: newTransfer.agentFee,
+        transferWindow: newTransfer.transferWindow,
+        deadline: newTransfer.deadline
+      };
+
       const res = await fetchWithAuth(`${API_BASE_URL}/transfers`, {
         method: "POST",
-        body: JSON.stringify({
-          playerId: newTransfer.playerId,
-          toClub: newTransfer.toClub,
-          amount: newTransfer.amount,
-          type: newTransfer.type,
-          contractLength: newTransfer.contractLength,
-          salary: newTransfer.salary,
-          releaseClause: newTransfer.releaseClause,
-          agentFee: newTransfer.agentFee,
-          transferWindow: newTransfer.transferWindow,
-          deadline: newTransfer.deadline
-        })
+        body: JSON.stringify(payload)
       });
 
       console.log("Transfer creation response status:", res?.status);
@@ -196,8 +278,35 @@ export default function Transfers() {
       const result = await res.json();
       console.log("Transfer created successfully:", result);
 
+      const created = result.transfer || result;
+
+      // If there are files selected, upload them to the transfer documents endpoint
+      try {
+        if (consentFile || contractFile) {
+          const fd = new FormData();
+          if (consentFile) fd.append('consent', consentFile);
+          if (contractFile) fd.append('contract', contractFile);
+          // Use fetch directly to allow multipart/form-data (do not set JSON content-type)
+          const uploadRes = await fetch(`${API_BASE_URL}/transfers/${created._id || created._id}/documents`, {
+            method: 'POST',
+            credentials: 'include',
+            body: fd,
+          });
+          if (uploadRes && !uploadRes.ok) {
+            const text = await uploadRes.text();
+            console.error('Document upload failed', uploadRes.status, text);
+            setError(`Transfer created, but failed to upload documents: ${text}`);
+          }
+        }
+      } catch (uploadErr) {
+        console.error('Document upload error', uploadErr);
+        setError('Transfer created, but failed to upload documents.');
+      }
+
       setIsDialogOpen(false);
       setNewTransfer({ playerId: "", toClub: "", amount: "", type: "Permanent", contractLength: "", salary: "", releaseClause: "", agentFee: "", transferWindow: "", deadline: "" });
+      setConsentFile(null);
+      setContractFile(null);
       fetchData(); // Refresh data after a successful creation
       setError(""); // Clear any previous errors
     } catch (err: any) {
@@ -206,9 +315,9 @@ export default function Transfers() {
     }
   };
 
-  // Incoming transfer requests for this club
+  // Incoming transfer requests for this club (as the selling club)
   const incomingTransfers = transfers.filter(
-    t => t.toClub?._id === userClubId && t.status === "Pending"
+    t => t.fromClub?._id === userClubId && t.status === "Pending"
   );
   
   // Accept/reject handlers
@@ -246,8 +355,8 @@ export default function Transfers() {
     if (!counterOfferTransfer || !counterOfferAmount) return;
     try {
       const res = await fetchWithAuth(`${API_BASE_URL}/transfers/${counterOfferTransfer._id}/counter-offer`, {
-        method: "PUT",
-        body: JSON.stringify({ amount: parseFloat(counterOfferAmount) })
+        method: "POST",
+        body: JSON.stringify({ fee: parseFloat(counterOfferAmount) })
       });
       if (!res?.ok) {
         const errorText = await res.text();
@@ -275,8 +384,8 @@ export default function Transfers() {
   const handleModalCounterOffer = async (transfer, amount) => {
     try {
       const res = await fetchWithAuth(`${API_BASE_URL}/transfers/${transfer._id}/counter-offer`, {
-        method: "PUT",
-        body: JSON.stringify({ amount: parseFloat(amount) })
+        method: "POST",
+        body: JSON.stringify({ fee: parseFloat(amount) })
       });
       if (!res?.ok) {
         const errorText = await res.text();
@@ -284,18 +393,23 @@ export default function Transfers() {
       }
       fetchData();
       // Update the selected transfer to reflect changes
-      const updatedTransfers = await fetch(`${API_BASE_URL}/transfers`);
-      const transfersData = await updatedTransfers.json();
-      const updatedTransfer = transfersData.find(t => t._id === transfer._id);
+      const updatedTransfers = await fetch(`${API_BASE_URL}/transfers`, { credentials: 'include' });
+      const transfersDataRaw = await updatedTransfers.json();
+      const transfersArray = Array.isArray(transfersDataRaw) ? transfersDataRaw : (transfersDataRaw.transfers || []);
+      const updatedTransfer = transfersArray.find(t => t._id === transfer._id);
       setSelectedTransfer(updatedTransfer);
     } catch (err) {
       setError("Failed to submit counter-offer.");
     }
   };
 
-  const handleAcceptCounter = async (id) => {
+  const handleAcceptCounter = async (transferId, offerId) => {
+    if (!offerId) {
+      setError('No counter-offer id provided');
+      return;
+    }
     try {
-      const res = await fetchWithAuth(`${API_BASE_URL}/transfers/${id}/accept-counter`, {
+      const res = await fetchWithAuth(`${API_BASE_URL}/transfers/${transferId}/counter-offer/${offerId}/accept`, {
         method: "PUT",
       });
       if (!res?.ok) {
@@ -321,17 +435,35 @@ export default function Transfers() {
   };
 
   // Main JSX
-  // Filter players to only show active players who can be transferred
-  const filteredPlayers = Array.isArray(players) ? players.filter(player =>
-    player.status === 'Active' || player.currentStatus?.registrationStatus === 'Active'
-  ) : [];
+  // Filter players to only show active players who can be transferred (exclude players belonging to logged-in club)
+  const filteredPlayers = Array.isArray(players) ? players.filter(player => {
+    // Consider a player transferable when they are registered/approved or marked active
+    const registrationStatus = player.currentStatus?.registrationStatus;
+    const isRegistered = registrationStatus === 'Approved' || player.status === 'Active';
+    const playerClubId = (player.club && (player.club._id || player.club)) || player.clubId || player.currentClubId || null;
+    const isOwn = playerClubId ? String(playerClubId) === String(userClubId) : false;
+    return isRegistered && !isOwn;
+  }) : [];
+
+  const getPlayerClubName = (player) => {
+    if (!player) return 'Unknown Club';
+    return player.club?.clubName || player.club?.name || player.clubName || player.currentClub?.clubName || player.currentClub?.name || getClubName(player.clubId || player.clubId);
+  };
+
+  // Currently-selected player object (derived from selected playerId)
+  const selectedPlayer = newTransfer.playerId ? (players.find(p => p._id === newTransfer.playerId) || null) : null;
+  // Prefer the freshly-fetched full player record when available
+  const effectiveSelectedPlayer = selectedPlayerFull || selectedPlayer;
+  const selectedPlayerClubName = effectiveSelectedPlayer ? (
+    effectiveSelectedPlayer.club?.clubName || effectiveSelectedPlayer.club?.name || effectiveSelectedPlayer.clubName || effectiveSelectedPlayer.currentClub?.clubName || effectiveSelectedPlayer.currentClub?.name || null
+  ) : null;
 
   console.log("All players:", players);
   console.log("Filtered players for transfer:", filteredPlayers.length);
   console.log("User club ID:", userClubId);
-  
-  if (loading) return <div className="p-8 text-center">Loading...</div>;
-  if (error) return <div className="p-8 text-center text-destructive">{error}</div>;
+
+  // Don't early-return on loading/error so the page layout and dialogs remain
+  // accessible even when the API is unavailable. Show inline banners instead.
 
   return (
     <div className="flex-1">
@@ -343,153 +475,205 @@ export default function Transfers() {
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90">
-                <Plus size={16} className="mr-2" />
-                Initiate New Transfer
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Initiate New Transfer</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="playerId">Player</Label>
-                  <select
-                    id="playerId"
-                    className="w-full px-3 py-2 border rounded-lg text-sm bg-background"
-                    value={newTransfer.playerId}
-                    onChange={e => setNewTransfer({ ...newTransfer, playerId: e.target.value })}
-                  >
-                    <option value="none">Select a player</option>
-                    {filteredPlayers.length > 0 ? (
-                      filteredPlayers.map(player => (
-                        <option key={player._id} value={player._id}>
-                          {player.name} ({player.nrc}) - {player.position}
-                        </option>
-                      ))
-                    ) : (
-                      <option value="none" disabled>
-                        {loading ? 'Loading players...' : 'No active players available for transfer'}
-                      </option>
-                    )}
-                  </select>
+                <Button className="bg-primary hover:bg-primary/90">
+                  <Plus size={16} className="mr-2" />
+                  Initiate New Transfer
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[900px] h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Initiate New Transfer</DialogTitle>
+                  <div className="ml-auto">
+                    <Button variant="ghost" onClick={() => setIsDialogOpen(false)} aria-label="Close">Close</Button>
+                  </div>
+                </DialogHeader>
+                <div className="space-y-4 p-2">
+                  <div className="bg-card p-4 rounded-lg shadow-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="playerId">Player</Label>
+                        <select
+                          id="playerId"
+                          className="w-full px-3 py-2 border rounded-lg text-sm bg-background"
+                          value={newTransfer.playerId}
+                          onChange={e => setNewTransfer({ ...newTransfer, playerId: e.target.value })}
+                        >
+                          <option value="">Select a player</option>
+                          {filteredPlayers.length > 0 ? (
+                            filteredPlayers.map(player => (
+                              <option key={player._id} value={player._id}>
+                                {player.name} ({player.nrc}) — {player.position} • {getPlayerClubName(player)}
+                              </option>
+                            ))
+                          ) : (
+                            <option value="" disabled>
+                              {loading ? 'Loading players...' : 'No registered players available for transfer'}
+                            </option>
+                          )}
+                        </select>
+                      </div>
+                      <div>
+                        <Label>Buying Club</Label>
+                        <div className="w-full px-3 py-2 border rounded-lg text-sm bg-background text-muted-foreground">{userClubName || userClubId}</div>
+                      </div>
+                      {effectiveSelectedPlayer && (
+                        <div>
+                          <Label>Selling Club</Label>
+                          <div className="w-full px-3 py-2 border rounded-lg text-sm bg-background">{selectedPlayerClubName || 'Unknown Club'}</div>
+                        </div>
+                      )}
+
+                      <div>
+                        <Label htmlFor="amount">Transfer Amount</Label>
+                        <Input
+                          id="amount"
+                          placeholder="Enter transfer amount (e.g., K50,000)"
+                          value={newTransfer.amount}
+                          onChange={e => setNewTransfer({ ...newTransfer, amount: e.target.value })}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="type">Transfer Type</Label>
+                        <select
+                          id="type"
+                          className="w-full px-3 py-2 border rounded-lg text-sm bg-background"
+                          value={newTransfer.type}
+                          onChange={e => setNewTransfer({ ...newTransfer, type: e.target.value })}
+                        >
+                          <option value="Permanent">Permanent Transfer</option>
+                          <option value="Loan">Loan Transfer</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="contractLength">Contract Length (Years)</Label>
+                        <Input
+                          id="contractLength"
+                          type="number"
+                          placeholder="Enter contract length in years"
+                          value={newTransfer.contractLength}
+                          onChange={e => setNewTransfer({ ...newTransfer, contractLength: e.target.value })}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="salary">Salary</Label>
+                        <Input
+                          id="salary"
+                          placeholder="Enter salary amount (e.g., K50,000)"
+                          value={newTransfer.salary}
+                          onChange={e => setNewTransfer({ ...newTransfer, salary: e.target.value })}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="releaseClause">Release Clause</Label>
+                        <Input
+                          id="releaseClause"
+                          placeholder="Enter release clause amount"
+                          value={newTransfer.releaseClause}
+                          onChange={e => setNewTransfer({ ...newTransfer, releaseClause: e.target.value })}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="agentFee">Agent Fee</Label>
+                        <Input
+                          id="agentFee"
+                          placeholder="Enter agent fee amount"
+                          value={newTransfer.agentFee}
+                          onChange={e => setNewTransfer({ ...newTransfer, agentFee: e.target.value })}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="transferWindow">Transfer Window</Label>
+                        <select
+                          id="transferWindow"
+                          className="w-full px-3 py-2 border rounded-lg text-sm bg-background"
+                          value={newTransfer.transferWindow}
+                          onChange={e => setNewTransfer({ ...newTransfer, transferWindow: e.target.value })}
+                        >
+                          <option value="none">Select transfer window</option>
+                          <option value="Summer">Summer</option>
+                          <option value="Winter">Winter</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="deadline">Deadline</Label>
+                        <Input
+                          id="deadline"
+                          type="date"
+                          value={newTransfer.deadline}
+                          onChange={e => setNewTransfer({ ...newTransfer, deadline: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-card p-4 rounded-lg shadow-sm mt-4">
+                    <h4 className="font-semibold">Required documents</h4>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-3">
+                      <label className="inline-flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={requiredDocs.consent}
+                          onChange={e => setRequiredDocs({ ...requiredDocs, consent: e.target.checked })}
+                        />
+                        <span className="ml-2">Player consent form (required)</span>
+                      </label>
+                      <label className="inline-flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={requiredDocs.contract}
+                          onChange={e => setRequiredDocs({ ...requiredDocs, contract: e.target.checked })}
+                        />
+                        <span className="ml-2">Proposed contract (required)</span>
+                      </label>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">Files can be uploaded from the player profile or attached after creating a draft.</p>
+                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Player consent file</Label>
+                        <input
+                          type="file"
+                          accept="application/pdf,image/*"
+                          onChange={e => setConsentFile(e.target.files && e.target.files[0])}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label>Proposed contract file</Label>
+                        <input
+                          type="file"
+                          accept="application/pdf,image/*"
+                          onChange={e => setContractFile(e.target.files && e.target.files[0])}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-4">
+                    <Button
+                      onClick={handleSubmitTransfer}
+                      className="flex-1 bg-primary hover:bg-primary/90"
+                      disabled={!newTransfer.playerId || !requiredDocs.consent || !requiredDocs.contract}
+                    >
+                      Submit Transfer Request
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsDialogOpen(false)}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="toClub">Destination Club</Label>
-                  <select
-                    id="toClub"
-                    className="w-full px-3 py-2 border rounded-lg text-sm bg-background"
-                    value={newTransfer.toClub}
-                    onChange={e => setNewTransfer({ ...newTransfer, toClub: e.target.value })}
-                  >
-                    <option value="none">Select destination club</option>
-                    {Array.isArray(clubs) && clubs
-                      .filter(club => club._id !== userClubId)
-                      .map(club => (
-                        <option key={club._id} value={club._id}>
-                          {club.clubName}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="amount">Transfer Amount</Label>
-                  <Input
-                    id="amount"
-                    placeholder="Enter transfer amount (e.g., K50,000)"
-                    value={newTransfer.amount}
-                    onChange={e => setNewTransfer({ ...newTransfer, amount: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="type">Transfer Type</Label>
-                  <select
-                    id="type"
-                    className="w-full px-3 py-2 border rounded-lg text-sm bg-background"
-                    value={newTransfer.type}
-                    onChange={e => setNewTransfer({ ...newTransfer, type: e.target.value })}
-                  >
-                    <option value="Permanent">Permanent Transfer</option>
-                    <option value="Loan">Loan Transfer</option>
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="contractLength">Contract Length (Years)</Label>
-                  <Input
-                    id="contractLength"
-                    type="number"
-                    placeholder="Enter contract length in years"
-                    value={newTransfer.contractLength}
-                    onChange={e => setNewTransfer({ ...newTransfer, contractLength: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="salary">Salary</Label>
-                  <Input
-                    id="salary"
-                    placeholder="Enter salary amount (e.g., K50,000)"
-                    value={newTransfer.salary}
-                    onChange={e => setNewTransfer({ ...newTransfer, salary: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="releaseClause">Release Clause</Label>
-                  <Input
-                    id="releaseClause"
-                    placeholder="Enter release clause amount"
-                    value={newTransfer.releaseClause}
-                    onChange={e => setNewTransfer({ ...newTransfer, releaseClause: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="agentFee">Agent Fee</Label>
-                  <Input
-                    id="agentFee"
-                    placeholder="Enter agent fee amount"
-                    value={newTransfer.agentFee}
-                    onChange={e => setNewTransfer({ ...newTransfer, agentFee: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="transferWindow">Transfer Window</Label>
-                  <select
-                    id="transferWindow"
-                    className="w-full px-3 py-2 border rounded-lg text-sm bg-background"
-                    value={newTransfer.transferWindow}
-                    onChange={e => setNewTransfer({ ...newTransfer, transferWindow: e.target.value })}
-                  >
-                    <option value="none">Select transfer window</option>
-                    <option value="Summer">Summer</option>
-                    <option value="Winter">Winter</option>
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor="deadline">Deadline</Label>
-                  <Input
-                    id="deadline"
-                    type="date"
-                    value={newTransfer.deadline}
-                    onChange={e => setNewTransfer({ ...newTransfer, deadline: e.target.value })}
-                  />
-                </div>
-                <div className="flex gap-2 pt-4">
-                  <Button
-                    onClick={handleSubmitTransfer}
-                    className="flex-1 bg-primary hover:bg-primary/90"
-                  >
-                    Submit Transfer Request
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
+              </DialogContent>
           </Dialog>
           <Dialog open={!!counterOfferTransfer} onOpenChange={() => setCounterOfferTransfer(null)}>
             <DialogContent className="sm:max-w-md">
@@ -526,6 +710,18 @@ export default function Transfers() {
           </Dialog>
         </div>
       </header>
+
+      {/* Inline error/loading indicators so layout stays visible */}
+      {error && (
+        <div className="p-4 bg-destructive/10 text-destructive text-center">
+          <strong>Error:</strong> {error}
+        </div>
+      )}
+      {loading && (
+        <div className="p-4 bg-muted/10 text-muted-foreground text-center">
+          Loading transfers and players...
+        </div>
+      )}
       {/* Incoming Transfer Requests Section */}
       {incomingTransfers.length > 0 && (
         <main className="flex-1 p-8">
@@ -651,7 +847,7 @@ export default function Transfers() {
                           </Badge>
                           <p className="text-xs text-muted-foreground mt-1">{new Date(transfer.requestDate).toLocaleDateString()}</p>
                           <div className="flex gap-2 mt-2">
-                            {userClubId === transfer.toClub._id && transfer.status === 'Pending' && (
+                            {userClubId === transfer.fromClub._id && transfer.status === 'Pending' && (
                               <>
                                 <Button size="sm" onClick={() => handleAccept(transfer._id)}>Accept</Button>
                                 <Button size="sm" variant="outline" onClick={() => handleReject(transfer._id)}>Reject</Button>
@@ -659,7 +855,10 @@ export default function Transfers() {
                               </>
                             )}
                             {userClubId === transfer.fromClub._id && transfer.status === 'CounterOffered' && (
-                              <Button size="sm" onClick={() => handleAcceptCounter(transfer._id)}>Accept Counter</Button>
+                              <Button size="sm" onClick={() => {
+                                const latestOfferId = transfer.counterOffers?.length ? transfer.counterOffers[transfer.counterOffers.length - 1]._id : null;
+                                handleAcceptCounter(transfer._id, latestOfferId);
+                              }}>Accept Counter</Button>
                             )}
                           </div>
                         </div>

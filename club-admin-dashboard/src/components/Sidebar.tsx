@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { getItem, setItem, removeItem } from "@/lib/storage";
+import { useAuth } from "@/context/AuthContext";
 import { 
   LayoutDashboard, 
   Users, 
@@ -28,12 +30,13 @@ export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [clubData, setClubData] = useState(null); // State to hold club data
+  const [clubDataLocal, setClubDataLocal] = useState<any | null>(null); // local visual fallback
+  const { clubData, loading: authLoading } = useAuth();
 
   // Load theme preference and club data from local storage on initial render
   useEffect(() => {
     // Load theme
-    const savedTheme = localStorage.getItem("theme");
+    const savedTheme = getItem("theme");
     if (savedTheme === "dark") {
       setIsDarkMode(true);
       document.documentElement.classList.add("dark");
@@ -42,23 +45,42 @@ export default function Sidebar() {
       document.documentElement.classList.remove("dark");
     }
 
-    // Load club data
-    const savedClubData = localStorage.getItem("clubData");
+    // Load club data from AuthContext (if available) otherwise fall back to any saved local copy
+    const savedClubData = getItem("clubData");
     if (savedClubData) {
-      try { setClubData(JSON.parse(savedClubData)); } catch(e) { setClubData(null); }
+      try { setClubDataLocal(JSON.parse(savedClubData as string)); } catch(e) { setClubDataLocal(null); }
     }
   }, []);
 
+  // Prefer clubData from AuthContext, fall back to locally stored clubData
+  const preferredClub = clubData || clubDataLocal;
+  // Normalize logo value safely — backend may return a string, object, or array
+  const rawLogoVal: any = preferredClub ? (preferredClub.clubLogo || preferredClub.logo) : null;
+  let logoValStr: string | null = null;
+
+  if (typeof rawLogoVal === 'string') {
+    logoValStr = rawLogoVal;
+  } else if (rawLogoVal) {
+    // If it's an array, try to pick a sensible first entry
+    if (Array.isArray(rawLogoVal)) {
+      const first = rawLogoVal.find((it: any) => typeof it === 'string' || (it && (it.url || it.path || it.filename || it.secure_url)));
+      if (typeof first === 'string') logoValStr = first;
+      else if (first && typeof first === 'object') logoValStr = first.url || first.path || first.filename || first.secure_url || null;
+    } else if (typeof rawLogoVal === 'object') {
+      logoValStr = rawLogoVal.url || rawLogoVal.path || rawLogoVal.filename || rawLogoVal.secure_url || null;
+    }
+  }
+
   // Compute logo src in a robust way to handle full URLs, root-relative paths, and filenames
-  const logoVal = clubData ? (clubData.clubLogo || clubData.logo) : null;
   let logoSrc: string | null = null;
-  if (logoVal) {
-    if (/^https?:\/\//i.test(logoVal) || logoVal.startsWith('//')) {
-      logoSrc = logoVal;
-    } else if (logoVal.startsWith('/')) {
-      logoSrc = logoVal;
+  if (logoValStr) {
+    const v = logoValStr;
+    if (/^https?:\/\//i.test(v) || v.startsWith('//')) {
+      logoSrc = v;
+    } else if (v.startsWith('/')) {
+      logoSrc = v;
     } else {
-      logoSrc = `/lovable-uploads/${logoVal}`;
+      logoSrc = `/lovable-uploads/${v}`;
     }
     // append timestamp to bust cache when logo changes
     const sep = logoSrc.includes('?') ? '&' : '?';
@@ -69,7 +91,7 @@ export default function Sidebar() {
   const toggleTheme = () => {
     const newTheme = !isDarkMode;
     setIsDarkMode(newTheme);
-    localStorage.setItem("theme", newTheme ? "dark" : "light");
+    setItem("theme", newTheme ? "dark" : "light");
     if (newTheme) {
       document.documentElement.classList.add("dark");
     } else {
@@ -78,11 +100,11 @@ export default function Sidebar() {
   };
 
   const handleLogout = () => {
-    // Call backend to clear JWT cookie
-    fetch("/api/auth/logout", { method: "POST", credentials: "include" })
+    // Call backend to clear club admin cookie (clubs-panel logout)
+    fetch("/api/clubs-panel/admin-logout", { method: "POST", credentials: "include" })
       .then(() => {
-        localStorage.removeItem("jwt");
-        localStorage.removeItem("clubData"); // Clear club data on logout
+        // Clear any client-side club metadata
+        removeItem("clubData"); // Clear club data on logout
         // Optionally clear all cookies
         document.cookie.split(";").forEach((c) => {
           document.cookie = c
@@ -121,8 +143,8 @@ export default function Sidebar() {
               </div>
             )}
             <div>
-              <h1 className="text-sidebar-foreground font-bold text-xl">
-                {clubData ? `FAZ Portal - ${clubData.name}` : "FAZ Portal"}
+                <h1 className="text-sidebar-foreground font-bold text-xl">
+                {preferredClub ? `FAZ Portal - ${preferredClub.name}` : "FAZ Portal"}
               </h1>
             
             </div>

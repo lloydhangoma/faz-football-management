@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getItem } from "@/lib/storage";
 
 // Defines the shape of a Club object to ensure type safety in TypeScript.
 interface Club {
@@ -37,8 +38,8 @@ const LeagueTable = () => {
 
     // Tries to get the current club's data from the browser's local storage.
     try {
-      // Parses the JSON string from local storage to get the club's ID.
-      const clubData = JSON.parse(localStorage.getItem("clubData") || "null");
+      // Parses the JSON string from storage to get the club's ID.
+      const clubData = JSON.parse(getItem("clubData") as string || "null");
       setCurrentClubId(clubData?.id || null); // Sets the state with the ID.
     } catch {
       // If parsing fails, it sets the ID to null.

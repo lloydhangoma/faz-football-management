@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Clubs from "./pages/Clubs";
 import ClubApplications from "./pages/ClubApplications";
 import Transfers from "./pages/Transfers";
+import Players from "./pages/Players";
 import Bans from "./pages/Bans";
 import SimplePage from "./pages/SimplePage";
 import NotFound from "./pages/NotFound";
@@ -53,6 +54,7 @@ const App = (): JSX.Element => (
             <Route path="clubs" element={<Clubs />} />
             <Route path="club-applications" element={<ClubApplications />} />
             <Route path="transfers" element={<Transfers />} />
+            <Route path="players" element={<Players />} />
             <Route path="bans" element={<Bans />} />
 
             <Route

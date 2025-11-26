@@ -1,75 +1,52 @@
 import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { API } from "@/api/client";
 import { Button } from "@/components/ui/button";
+import StatusNoteModal from "@/pages/admin/components/StatusNoteModal";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ArrowRightLeft, Search, Calendar, DollarSign, User } from "lucide-react";
 
-const transfersData = [
-  {
-    id: "1",
-    playerName: "Emmanuel Banda",
-    fromClub: "Nkana FC",
-    toClub: "Power Dynamos FC",
-    transferDate: "2024-01-15",
-    transferFee: "$25,000",
-    status: "Pending Approval",
-    type: "Permanent",
-    agent: "Sports Management Ltd",
-  },
-  {
-    id: "2",
-    playerName: "Collins Sikombe",
-    fromClub: "Zanaco FC",
-    toClub: "Nkana FC",
-    transferDate: "2024-01-14",
-    transferFee: "$15,000",
-    status: "Approved",
-    type: "Permanent",
-    agent: "No Agent",
-  },
-  {
-    id: "3",
-    playerName: "Fashion Sakala",
-    fromClub: "Power Dynamos FC",
-    toClub: "Al Ittihad (Saudi Arabia)",
-    transferDate: "2024-01-12",
-    transferFee: "$180,000",
-    status: "International Clearance",
-    type: "Permanent",
-    agent: "FIFA Agent Services",
-  },
-  {
-    id: "4",
-    playerName: "Moses Phiri",
-    fromClub: "Lusaka Dynamos FC",
-    toClub: "Green Eagles FC",
-    transferDate: "2024-01-10",
-    transferFee: "Free Transfer",
-    status: "Rejected",
-    type: "Free Transfer",
-    agent: "No Agent",
-  },
-  {
-    id: "5",
-    playerName: "Kennedy Musonda",
-    fromClub: "Kabwe Warriors FC",
-    toClub: "Zanaco FC",
-    transferDate: "2024-01-08",
-    transferFee: "$8,000",
-    status: "Under Review",
-    type: "Loan",
-    agent: "Player Agent ZM",
-  },
-];
+// Query pending transfers from admin API
+function usePendingTransfers() {
+  return useQuery({
+    queryKey: ['admin', 'transfers', 'pending'],
+    queryFn: async () => {
+      const { data } = await API.get('/admin/transfers/pending');
+      return data.pending || [];
+    },
+    staleTime: 30 * 1000,
+  });
+}
 
 export default function Transfers() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
+  const qc = useQueryClient();
+  const { data: transfersData = [], isLoading } = usePendingTransfers();
 
-  const filteredTransfers = transfersData.filter(transfer => {
-    const matchesSearch = transfer.playerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         transfer.fromClub.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         transfer.toClub.toLowerCase().includes(searchTerm.toLowerCase());
+  const approveTransfer = useMutation({
+    mutationFn: ({ id }: { id: string }) => API.post(`/admin/transfers/${id}/approve`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'transfers', 'pending'] }),
+  });
+
+  const rejectTransfer = useMutation({
+    mutationFn: ({ id, note }: { id: string, note?: string }) => API.post(`/admin/transfers/${id}/reject`, { note }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'transfers', 'pending'] }),
+  });
+
+  const triggerExport = useMutation({
+    mutationFn: ({ id }: { id: string }) => API.post(`/admin/transfers/${id}/trigger-export`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'transfers', 'pending'] }),
+  });
+
+  const filteredTransfers = (transfersData || []).filter((transfer: any) => {
+    const playerName = (transfer.player?.name || transfer.playerId?.name || transfer.playerName || '').toString();
+    const fromClub = (transfer.fromClub?.name || transfer.fromClub?.clubName || transfer.fromClub || transfer.fromClubId?.club?.name || transfer.fromClubId?.name || '').toString();
+    const toClub = (transfer.toClub?.name || transfer.toClub?.clubName || transfer.toClub || transfer.toClubId?.club?.name || transfer.toClubId?.name || '').toString();
+
+    const q = searchTerm.toLowerCase();
+    const matchesSearch = playerName.toLowerCase().includes(q) || fromClub.toLowerCase().includes(q) || toClub.toLowerCase().includes(q);
     const matchesStatus = filterStatus === "All" || transfer.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -104,13 +81,14 @@ export default function Transfers() {
     }
   };
 
-  const getActionButton = (status: string) => {
+  const getActionButton = (transfer: any) => {
+    const status = transfer.status;
     switch (status) {
       case "Pending Approval":
         return (
           <div className="flex gap-2">
-            <Button variant="success" size="sm">Approve</Button>
-            <Button variant="destructive" size="sm">Reject</Button>
+            <Button variant="success" size="sm" onClick={() => approveTransfer.mutate({ id: transfer._id || transfer.id })}>Approve</Button>
+            <Button variant="destructive" size="sm" onClick={() => { setRejectTransferId(transfer._id || transfer.id); setRejectModalOpen(true); }}>Reject</Button>
           </div>
         );
       case "Under Review":
@@ -124,6 +102,17 @@ export default function Transfers() {
       default:
         return <Button variant="outline" size="sm">Details</Button>;
     }
+  };
+
+  // Reject modal state
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectTransferId, setRejectTransferId] = useState<string | null>(null);
+
+  const handleRejectSubmit = (note: string) => {
+    if (!rejectTransferId) return;
+    rejectTransfer.mutate({ id: rejectTransferId, note });
+    setRejectModalOpen(false);
+    setRejectTransferId(null);
   };
 
   return (
@@ -172,7 +161,7 @@ export default function Transfers() {
 
       {/* Transfers List */}
       <div className="space-y-4">
-        {filteredTransfers.map((transfer) => (
+                {filteredTransfers.map((transfer) => (
           <div key={transfer.id} className="bg-card rounded-lg border border-border p-6 shadow-card">
             <div className="flex items-start justify-between">
               <div className="flex items-start gap-4">
@@ -181,18 +170,18 @@ export default function Transfers() {
                 </div>
                 <div className="space-y-3">
                   <div>
-                    <h3 className="font-semibold text-card-foreground text-lg">{transfer.playerName}</h3>
+                    <h3 className="font-semibold text-card-foreground text-lg">{(transfer.player?.name || transfer.playerId?.name || transfer.playerName || '')}</h3>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>{transfer.fromClub}</span>
+                      <span>{(transfer.fromClub?.name || transfer.fromClub?.clubName || transfer.fromClub || transfer.fromClubId?.club?.name || transfer.fromClubId?.name || '')}</span>
                       <ArrowRightLeft className="w-4 h-4" />
-                      <span>{transfer.toClub}</span>
+                      <span>{(transfer.toClub?.name || transfer.toClub?.clubName || transfer.toClub || transfer.toClubId?.club?.name || transfer.toClubId?.name || '')}</span>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-6 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
-                      {new Date(transfer.transferDate).toLocaleDateString()}
+                      {new Date(transfer.transferDate || transfer.requestDate || transfer.requestedAt || transfer.createdAt).toLocaleDateString()}
                     </div>
                     <div className="flex items-center gap-1">
                       <DollarSign className="w-4 h-4" />
@@ -209,19 +198,44 @@ export default function Transfers() {
                       {transfer.type}
                     </Badge>
                   </div>
+                  {/* Documents (consent/contract) */}
+                  {transfer.documents && (
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      {transfer.documents.consent?.url && (
+                        <a className="mr-3 underline" target="_blank" rel="noreferrer" href={transfer.documents.consent.url}>Consent</a>
+                      )}
+                      {transfer.documents.contract?.url && (
+                        <a className="underline" target="_blank" rel="noreferrer" href={transfer.documents.contract.url}>Contract</a>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col items-end gap-2">
                 <Badge className={getStatusColor(transfer.status)}>
                   {transfer.status}
                 </Badge>
-                {getActionButton(transfer.status)}
+                {transfer.fifaExport && transfer.fifaExport.status === 'failed' && (
+                  <Button size="sm" variant="destructive" onClick={() => triggerExport.mutate({ id: transfer._id || transfer.id })}>Retry Export</Button>
+                )}
+                {getActionButton(transfer)}
               </div>
             </div>
           </div>
         ))}
       </div>
+
+        <StatusNoteModal
+          open={rejectModalOpen}
+          title="Reject Transfer"
+          label="Rejection reason"
+          placeholder="Explain why the transfer is rejected — this will be sent to both clubs"
+          submitLabel="Send Rejection"
+          defaultValue={""}
+          onCancel={() => { setRejectModalOpen(false); setRejectTransferId(null); }}
+          onSubmit={handleRejectSubmit}
+        />
 
       {filteredTransfers.length === 0 && (
         <div className="text-center py-12">

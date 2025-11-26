@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Layout from "@/components/Layout";
+import { AuthProvider } from "@/context/AuthContext";
 
 import ClubLogin from "@/pages/admin/Club-Login";
 import ClubRegister from "@/pages/admin/Club-Register";
@@ -24,6 +25,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <BrowserRouter>
+        <AuthProvider>
         {/* ToastProvider and all UI providers go here, inside the router context */}
         <Toaster />
         <Sonner />
@@ -55,6 +57,7 @@ const App = () => (
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

@@ -1,5 +1,6 @@
 // 📁 src/components/layout/Header.tsx
 import { useState, useEffect } from "react";
+import { getItem, setItem } from "@/lib/storage";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
@@ -38,7 +39,7 @@ export default function Header(): JSX.Element {
   // THEME
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("theme");
+      const saved = getItem("theme");
       if (saved) return saved === "dark";
       return window.matchMedia("(prefers-color-scheme: dark)").matches;
     }
@@ -49,10 +50,10 @@ export default function Header(): JSX.Element {
     const root = window.document.documentElement;
     if (darkMode) {
       root.classList.add("dark");
-      localStorage.setItem("theme", "dark");
+      setItem("theme", "dark");
     } else {
       root.classList.remove("dark");
-      localStorage.setItem("theme", "light");
+      setItem("theme", "light");
     }
   }, [darkMode]);
 

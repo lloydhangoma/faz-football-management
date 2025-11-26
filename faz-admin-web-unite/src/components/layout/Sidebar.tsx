@@ -44,6 +44,7 @@ const menuItems = [
     label: "PLAYER MANAGEMENT",
     items: [
       { label: "Transfers", icon: ArrowRightLeft, path: "/transfers", badge: "12" },
+      { label: "Players", icon: FileCheck, path: "/players" },
       { label: "Bans & Sanctions", icon: Shield, path: "/bans", badge: "8" },
     ],
   },

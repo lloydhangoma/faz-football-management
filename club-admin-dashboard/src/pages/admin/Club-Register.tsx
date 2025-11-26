@@ -1,5 +1,6 @@
 // src/pages/admin/Club-Register.tsx
 import { useState } from "react";
+import { setItem } from "@/lib/storage";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -104,12 +105,12 @@ export default function ClubRegister() {
         return;
       }
 
-      // Store minimal club data for quick header usage
+      // Store minimal club data for quick header usage (dev-only)
       const miniClub = {
         name: clubName,
         logo: clubLogo ? URL.createObjectURL(clubLogo) : null,
       };
-      localStorage.setItem("clubData", JSON.stringify(miniClub));
+      setItem("clubData", JSON.stringify(miniClub));
 
       // Clear form
       setClubName("");
@@ -398,13 +399,7 @@ export default function ClubRegister() {
       </Card>
 
       <div className="absolute top-4 right-4">
-        <Button
-          onClick={handleHome}
-          variant="outline"
-          className="bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700"
-        >
-          Home
-        </Button>
+        
       </div>
     </div>
   );

@@ -113,10 +113,7 @@ export default function Players() {
   const [selectedPlayerDetails, setSelectedPlayerDetails] = useState<any>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
 
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem("jwt");
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  };
+  // Auth is handled via httpOnly cookie; fetch requests include credentials where needed.
 
   useEffect(() => {
     fetchPlayers();
@@ -133,14 +130,26 @@ export default function Players() {
       if (searchTerm) queryParams.append('search', searchTerm);
 
       const res = await fetch(`${API_BASE_URL}/players?${queryParams}`, {
-        headers: getAuthHeaders()
+        credentials: 'include',
       });
 
-      if (!res.ok) throw new Error('Failed to fetch players');
+      if (!res.ok) {
+        // try to read response body for debugging
+        let bodyText = '';
+        try {
+          bodyText = await res.text();
+        } catch (e) {
+          bodyText = '<unreadable response body>';
+        }
+        console.error(`Players fetch failed: status=${res.status} body=${bodyText}`);
+        throw new Error(`Failed to fetch players: ${res.status}`);
+      }
 
       const data = await res.json();
+      console.debug('Players fetched:', Array.isArray(data) ? data.length : (data.players ? data.players.length : 0));
       setPlayers(data.players || data);
     } catch (err: any) {
+      console.error('Fetch players error:', err);
       setError(err.message || "Failed to fetch players.");
     } finally {
       setLoading(false);
@@ -151,7 +160,7 @@ export default function Players() {
     try {
       setDetailsLoading(true);
       const res = await fetch(`${API_BASE_URL}/players/${playerId}`, {
-        headers: getAuthHeaders()
+        credentials: 'include',
       });
 
       if (!res.ok) throw new Error('Failed to fetch player details');
@@ -194,13 +203,8 @@ export default function Players() {
     }
   };
 
-  if (loading) {
-    return <div className="p-8">Loading players...</div>;
-  }
-
-  if (error) {
-    return <div className="p-8 text-red-500">{error}</div>;
-  }
+  // Do not early-return on loading/error so the layout and AddPlayerModal
+  // remain visible even when the API is down. Show inline banners instead.
 
   // Player Detail View
   if (selectedPlayer && selectedPlayerDetails) {
@@ -643,7 +647,6 @@ export default function Players() {
       </div>
     );
   }
-
   // Main Players List View
   return (
     <div className="flex-1">
@@ -659,6 +662,18 @@ export default function Players() {
           </Button>
         </div>
       </header>
+
+      {/* Inline error/loading indicators so layout stays visible */}
+      {error && (
+        <div className="p-4 bg-destructive/10 text-destructive text-center">
+          <strong>Error:</strong> {error}
+        </div>
+      )}
+      {loading && (
+        <div className="p-4 bg-muted/10 text-muted-foreground text-center">
+          Loading players...
+        </div>
+      )}
 
       <main className="flex-1 p-8">
         <Card>

@@ -31,11 +31,16 @@ export const AddPlayerModal: React.FC<AddPlayerModalProps> = ({ isOpen, onOpenCh
     email: "",
     valuation: "",
     contractExpiry: "",
+    passportNumber: "",
+    passportCountry: "",
+    passportExpiry: "",
+    placeOfBirth: "",
+    countryOfBirth: "",
     physicalAttributes: {
       height: "",
       weight: "",
       preferredFoot: "Right",
-      bloodType: ""
+      bloodType: "",
     },
     emergencyContact: {
       name: "",
@@ -44,6 +49,23 @@ export const AddPlayerModal: React.FC<AddPlayerModalProps> = ({ isOpen, onOpenCh
       email: "",
       address: ""
     },
+    guardian: {
+      name: "",
+      relationship: "",
+      phone: "",
+      email: "",
+    },
+    agent: {
+      name: "",
+      license: "",
+      phone: "",
+      email: "",
+    },
+    contractStart: "",
+    leagueRegistrationNumber: "",
+    fazId: "",
+    cafId: "",
+    fifaId: "",
   });
   const [addFiles, setAddFiles] = useState<{[key: string]: File}>({});
   const [addLoading, setAddLoading] = useState(false);
@@ -52,10 +74,7 @@ export const AddPlayerModal: React.FC<AddPlayerModalProps> = ({ isOpen, onOpenCh
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [tab, setTab] = useState("basic");
 
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem("jwt");
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  };
+  // We use httpOnly cookie for auth; XHR must send credentials
 
   const handleAddFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -113,14 +132,16 @@ export const AddPlayerModal: React.FC<AddPlayerModalProps> = ({ isOpen, onOpenCh
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", `${API_BASE_URL}/players`);
-        const headers = getAuthHeaders();
-        Object.entries(headers).forEach(([k, v]) => xhr.setRequestHeader(k, v as string));
+        // send httpOnly cookie for authentication
+        xhr.withCredentials = true;
+
         xhr.upload.onprogress = (event) => {
           if (event.lengthComputable) {
             setUploadProgress(Math.round((event.loaded / event.total) * 100));
           }
         };
-              if (xhr.status >= 200 && xhr.status < 300) {
+
+        xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             setAddSuccess("Player registered successfully!");
             setAddForm({
@@ -134,6 +155,11 @@ export const AddPlayerModal: React.FC<AddPlayerModalProps> = ({ isOpen, onOpenCh
               phone: "",
               email: "",
               valuation: "",
+              passportNumber: "",
+              passportCountry: "",
+              passportExpiry: "",
+              placeOfBirth: "",
+              countryOfBirth: "",
               contractExpiry: "",
               physicalAttributes: {
                 height: "",
@@ -148,6 +174,16 @@ export const AddPlayerModal: React.FC<AddPlayerModalProps> = ({ isOpen, onOpenCh
                 email: "",
                 address: ""
               },
+              guardian: {
+                name: "",
+                relationship: "",
+                phone: "",
+                email: "",
+              },
+              leagueRegistrationNumber: "",
+              fazId: "",
+              cafId: "",
+              fifaId: "",
             });
             setAddFiles({});
             onPlayerAdded();
@@ -156,22 +192,22 @@ export const AddPlayerModal: React.FC<AddPlayerModalProps> = ({ isOpen, onOpenCh
             resolve();
           } else {
             try {
-                  console.error("Player registration failed. Backend response:", xhr.responseText); // Debug log
-              const { message } = JSON.parse(xhr.responseText);
+              const { message } = JSON.parse(xhr.responseText || '{}');
               setAddError(message || 'Failed to register player');
             } catch {
               setAddError('Failed to register player');
             }
             setUploadProgress(null);
-                  console.error("Error parsing backend error response:", xhr.responseText, e); // Debug log
             reject(new Error('Failed to register player'));
           }
         };
+
         xhr.onerror = () => {
           setAddError('Network error.');
           setUploadProgress(null);
           reject(new Error('Network error.'));
         };
+
         xhr.send(formData);
       });
     } catch (err: any) {
@@ -233,6 +269,10 @@ export const AddPlayerModal: React.FC<AddPlayerModalProps> = ({ isOpen, onOpenCh
                   <Input id="nrc" name="nrc" value={addForm.nrc || ""} onChange={handleAddFormChange} required />
                 </div>
                 <div>
+                  <Label htmlFor="passportNumber">Passport Number</Label>
+                  <Input id="passportNumber" name="passportNumber" value={addForm.passportNumber || ""} onChange={handleAddFormChange} />
+                </div>
+                <div>
                   <Label htmlFor="position">Position *</Label>
                   <Select value={addForm.position || ""} onValueChange={(value) => setAddForm((prev: any) => ({ ...prev, position: value }))}>
                     <SelectTrigger>
@@ -253,6 +293,14 @@ export const AddPlayerModal: React.FC<AddPlayerModalProps> = ({ isOpen, onOpenCh
                 <div>
                   <Label htmlFor="phone">Phone Number *</Label>
                   <Input id="phone" name="phone" value={addForm.phone || ""} onChange={handleAddFormChange} required />
+                </div>
+                <div>
+                  <Label htmlFor="placeOfBirth">Place of Birth</Label>
+                  <Input id="placeOfBirth" name="placeOfBirth" value={addForm.placeOfBirth || ""} onChange={handleAddFormChange} />
+                </div>
+                <div>
+                  <Label htmlFor="countryOfBirth">Country of Birth</Label>
+                  <Input id="countryOfBirth" name="countryOfBirth" value={addForm.countryOfBirth || ""} onChange={handleAddFormChange} />
                 </div>
                 <div className="col-span-2">
                   <Label htmlFor="email">Email Address *</Label>
@@ -279,6 +327,27 @@ export const AddPlayerModal: React.FC<AddPlayerModalProps> = ({ isOpen, onOpenCh
                     <Input id="emergencyContact.email" name="emergencyContact.email" value={addForm.emergencyContact?.email || ""} onChange={handleAddFormChange} type="email" />
                   </div>
                 </div>
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Guardian (if under 18)</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="guardian.name">Guardian Name</Label>
+                        <Input id="guardian.name" name="guardian.name" value={addForm.guardian?.name || ""} onChange={handleAddFormChange} />
+                      </div>
+                      <div>
+                        <Label htmlFor="guardian.relationship">Relationship</Label>
+                        <Input id="guardian.relationship" name="guardian.relationship" value={addForm.guardian?.relationship || ""} onChange={handleAddFormChange} />
+                      </div>
+                      <div>
+                        <Label htmlFor="guardian.phone">Guardian Phone</Label>
+                        <Input id="guardian.phone" name="guardian.phone" value={addForm.guardian?.phone || ""} onChange={handleAddFormChange} />
+                      </div>
+                      <div>
+                        <Label htmlFor="guardian.email">Guardian Email</Label>
+                        <Input id="guardian.email" name="guardian.email" value={addForm.guardian?.email || ""} onChange={handleAddFormChange} type="email" />
+                      </div>
+                    </div>
+                  </div>
               </div>
             </TabsContent>
 
@@ -302,12 +371,40 @@ export const AddPlayerModal: React.FC<AddPlayerModalProps> = ({ isOpen, onOpenCh
                   <Input id="fifaId" name="fifaId" value={addForm.fifaId || ""} onChange={handleAddFormChange} />
                 </div>
                 <div>
+                  <Label htmlFor="passportCountry">Passport Country</Label>
+                  <Input id="passportCountry" name="passportCountry" value={addForm.passportCountry || ""} onChange={handleAddFormChange} />
+                </div>
+                <div>
+                  <Label htmlFor="passportExpiry">Passport Expiry</Label>
+                  <Input id="passportExpiry" name="passportExpiry" value={addForm.passportExpiry || ""} onChange={handleAddFormChange} type="date" />
+                </div>
+                <div>
                   <Label htmlFor="valuation">Player Valuation (USD)</Label>
                   <Input id="valuation" name="valuation" value={addForm.valuation || ""} onChange={handleAddFormChange} type="number" />
                 </div>
                 <div>
+                  <Label htmlFor="contractStart">Contract Start</Label>
+                  <Input id="contractStart" name="contractStart" value={addForm.contractStart || ""} onChange={handleAddFormChange} type="date" />
+                </div>
+                <div>
                   <Label htmlFor="contractExpiry">Contract Expiry</Label>
                   <Input id="contractExpiry" name="contractExpiry" value={addForm.contractExpiry || ""} onChange={handleAddFormChange} type="date" />
+                </div>
+                <div>
+                  <Label htmlFor="agent.name">Agent Name</Label>
+                  <Input id="agent.name" name="agent.name" value={addForm.agent?.name || ""} onChange={handleAddFormChange} />
+                </div>
+                <div>
+                  <Label htmlFor="agent.license">Agent License / ID</Label>
+                  <Input id="agent.license" name="agent.license" value={addForm.agent?.license || ""} onChange={handleAddFormChange} />
+                </div>
+                <div>
+                  <Label htmlFor="agent.phone">Agent Phone</Label>
+                  <Input id="agent.phone" name="agent.phone" value={addForm.agent?.phone || ""} onChange={handleAddFormChange} />
+                </div>
+                <div>
+                  <Label htmlFor="agent.email">Agent Email</Label>
+                  <Input id="agent.email" name="agent.email" value={addForm.agent?.email || ""} onChange={handleAddFormChange} type="email" />
                 </div>
               </div>
             </TabsContent>
@@ -418,6 +515,8 @@ export const AddPlayerModal: React.FC<AddPlayerModalProps> = ({ isOpen, onOpenCh
                     <div><strong>FIFA ID:</strong> {addForm.fifaId || "Pending"}</div>
                     <div><strong>Valuation:</strong> {addForm.valuation}</div>
                     <div><strong>Contract Expiry:</strong> {addForm.contractExpiry}</div>
+                    <div><strong>Contract Start:</strong> {addForm.contractStart || 'N/A'}</div>
+                    <div><strong>Agent:</strong> {addForm.agent?.name ? `${addForm.agent.name} (${addForm.agent.license || 'N/A'})` : 'N/A'}</div>
                     <div><strong>Physical:</strong> {addForm.physicalAttributes?.height}cm, {addForm.physicalAttributes?.weight}kg, {addForm.physicalAttributes?.preferredFoot} foot, {addForm.physicalAttributes?.bloodType}</div>
                     <div><strong>Emergency Contact:</strong> {addForm.emergencyContact?.name} ({addForm.emergencyContact?.relationship}), {addForm.emergencyContact?.phone}, {addForm.emergencyContact?.email}</div>
                     <div><strong>Player Photo:</strong> {renderFilePreview(addFiles.avatar)}</div>
@@ -444,7 +543,7 @@ export const AddPlayerModal: React.FC<AddPlayerModalProps> = ({ isOpen, onOpenCh
               Cancel
             </Button>
           </div>
-        </Tabs>s
+        </Tabs>
       </form>
     </DialogContent>
   </Dialog>

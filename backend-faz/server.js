@@ -1,6 +1,8 @@
 // server.js
 import express from 'express';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
@@ -10,10 +12,33 @@ import connectDB from './config/db.js';
 // Routes
 import adminPortalLoginRoutes from './routes/AdminPortalLoginRoutes.js';
 import clubsAdminPortalLoginRoutes from './routes/Clubs-Management-Panel/Clubs-AdminPortalLoginRoutes.js';
-
 import clubAppRoutes from './routes/frontend/ClubRegistration/ApplyClubAccountRoutes.js';
+import playersRoutes from './routes/club/PlayersRoutes.js';
+import transfersRoutes from './routes/club/TransfersRoutes.js';
+import matchesRoutes from './routes/MatchesRoutes.js';
+import clubsRoutes from './routes/ClubsRoutes.js';
+import adminPlayersRoutes from './routes/admin/PlayersAdminRoutes.js';
+import adminTransfersRoutes from './routes/admin/TransfersAdminRoutes.js';
+import adminFifaRoutes from './routes/admin/FifaWebhooksRoutes.js';
 
-dotenv.config();
+// Conditionally start transfer exporter worker. Use dynamic import so missing deps
+// (e.g., bullmq) don't prevent the server from starting during local testing.
+if (!process.env.DISABLE_TRANSFER_WORKER || process.env.DISABLE_TRANSFER_WORKER === '0') {
+  try {
+    // dynamic import to avoid module resolution errors when bullmq is not installed
+    const mod = await import('./jobs/transferExporter.js');
+    // module starts worker on import; if it exports a startup fn we could call it here
+    console.log('ℹ️ Transfer exporter module loaded');
+  } catch (err) {
+    console.warn('⚠️ Transfer exporter not started (missing optional deps):', err?.message || err);
+  }
+} else {
+  console.log('ℹ️ Transfer worker disabled by DISABLE_TRANSFER_WORKER');
+}
+
+// Load .env from the same directory as this file to avoid cwd issues when running nodemon
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, '.env') });
 await connectDB();
 
 const app = express();
@@ -70,6 +95,16 @@ app.use('/api/settings', adminPortalLoginRoutes);
 app.use('/api/clubs-panel', clubsAdminPortalLoginRoutes);
 // Club Applications API
 app.use('/api/club-applications', clubAppRoutes);
+// Club Dashboard APIs
+app.use('/api/players', playersRoutes);
+app.use('/api/transfers', transfersRoutes);
+app.use('/api/matches', matchesRoutes);
+app.use('/api/clubs', clubsRoutes);
+
+// Admin namespaces (Super Admin actions: approvals, oversight)
+app.use('/api/admin/players', adminPlayersRoutes);
+app.use('/api/admin/transfers', adminTransfersRoutes);
+app.use('/api/admin/fifa-webhooks', adminFifaRoutes);
 
 // Health
 app.get('/health', (_req, res) => res.send('ok'));
@@ -84,4 +119,10 @@ app.use((err, _req, res, _next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+
+// Export app for testing; only listen when not in test mode
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+}
+
+export default app;
