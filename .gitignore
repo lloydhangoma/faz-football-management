@@ -1,0 +1,8 @@
+
+# Env files
+*.env
+**/.env
+backend-faz/.env
+club-admin-dashboard/.env
+faz-admin-web-unite/.env
+faz-frontend/.env
