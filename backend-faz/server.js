@@ -14,6 +14,7 @@ import adminPortalLoginRoutes from './routes/AdminPortalLoginRoutes.js';
 import clubsAdminPortalLoginRoutes from './routes/Clubs-Management-Panel/Clubs-AdminPortalLoginRoutes.js';
 import clubAppRoutes from './routes/frontend/ClubRegistration/ApplyClubAccountRoutes.js';
 import playersRoutes from './routes/club/PlayersRoutes.js';
+import publicPlayersRoutes from './routes/frontend/PublicPlayersRoutes.js';
 import transfersRoutes from './routes/club/TransfersRoutes.js';
 import matchesRoutes from './routes/MatchesRoutes.js';
 import clubsRoutes from './routes/ClubsRoutes.js';
@@ -97,6 +98,8 @@ app.use('/api/clubs-panel', clubsAdminPortalLoginRoutes);
 app.use('/api/club-applications', clubAppRoutes);
 // Club Dashboard APIs
 app.use('/api/players', playersRoutes);
+// Public players listing for scouting / frontend market
+app.use('/api/public/players', publicPlayersRoutes);
 app.use('/api/transfers', transfersRoutes);
 app.use('/api/matches', matchesRoutes);
 app.use('/api/clubs', clubsRoutes);
