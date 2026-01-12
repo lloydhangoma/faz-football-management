@@ -1,0 +1,8 @@
+{
+  "name": "FAZ Official Portal",
+  "description": "The official digital home of the Football Association of Zambia, featuring news, fixtures, and national team updates with a modern sports-centric UI.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
