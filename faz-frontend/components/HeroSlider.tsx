@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -14,26 +13,34 @@ interface NewsSlide {
 const SLIDES: NewsSlide[] = [
   {
     id: 1,
-    image: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=2000',
-    category: 'GENERAL NEWS',
-    title: 'Chipolopolo edge out Morocco in a historic friendly encounter',
-    date: '24 May 2024',
+    image: 'https://res.cloudinary.com/djuz1gf78/image/upload/v1768149065/Chipolopolo_dtapv7.jpg',
+    category: 'SENIOR MEN',
+    title: 'CHIPOLOPOLO KICK OFF INTENSIVE PREPARATIONS FOR WORLD CUP QUALIFIERS',
+    date: '12 June 2024',
     link: '#'
   },
   {
     id: 2,
-    image: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=2000',
-    category: 'MATCH REPORT',
-    title: 'Nkana FC secures late draw against Power Dynamos in Kitwe Derby',
-    date: '22 May 2024',
+    image: 'https://res.cloudinary.com/djuz1gf78/image/upload/v1768149064/copperQueens_izzthq.jpg',
+    category: 'WOMEN SELECTION',
+    title: 'COPPER QUEENS ROSTER ANNOUNCED FOR UPCOMING PARIS OLYMPICS',
+    date: '15 May 2024',
     link: '#'
   },
   {
     id: 3,
-    image: 'https://images.unsplash.com/photo-1517466787929-bc90951d0974?auto=format&fit=crop&q=80&w=2000',
-    category: 'TEAM NEWS',
-    title: 'Copper Queens arrive in Paris ahead of Olympic tournament opener',
-    date: '15 May 2024',
+    image: 'https://res.cloudinary.com/djuz1gf78/image/upload/v1768149064/under_17_hnyht0.jpg',
+    category: 'YOUTH DEVELOPMENT',
+    title: 'UNDER-17 SQUAD CAMPING COMMENCES AHEAD OF COSAFA CHAMPIONSHIP',
+    date: '20 May 2024',
+    link: '#'
+  },
+  {
+    id: 4,
+    image: 'https://res.cloudinary.com/djuz1gf78/image/upload/v1768149065/Futsal_team._wthik0.jpg',
+    category: 'FUTSAL',
+    title: 'ZAMBIA FUTSAL NATIONAL TEAM EYES VICTORY IN AFCON FINALS',
+    date: '28 May 2024',
     link: '#'
   }
 ];
@@ -55,7 +62,7 @@ const HeroSlider: React.FC = () => {
   }, [nextSlide]);
 
   return (
-    <section className="relative h-[90vh] w-full overflow-hidden bg-faz-black">
+    <section className="relative h-[60vh] w-full overflow-hidden bg-black">
       {SLIDES.map((slide, index) => (
         <div
           key={slide.id}
@@ -71,8 +78,8 @@ const HeroSlider: React.FC = () => {
               transform: index === current ? 'scale(1.05)' : 'scale(1)'
             }}
           >
-            {/* Darker Bottom Gradient for News Text Readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-faz-green/90 via-black/20 to-black/40" />
+            {/* Gradient Overlay for Text Readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/40" />
           </div>
 
           {/* News Content */}
@@ -82,13 +89,13 @@ const HeroSlider: React.FC = () => {
             }`}>
               {/* Category Tag */}
               <div className="mb-4">
-                <span className="text-faz-orange font-bold text-sm md:text-base uppercase tracking-widest drop-shadow-lg">
+                <span className="text-[#f97316] font-bold text-sm md:text-base uppercase tracking-widest drop-shadow-lg">
                   {slide.category}
                 </span>
               </div>
 
               {/* Headline */}
-              <h2 className="text-4xl md:text-7xl font-bold text-white leading-[1.1] mb-6 drop-shadow-2xl">
+              <h2 className="text-4xl md:text-7xl font-bold text-white leading-[1.1] mb-6 drop-shadow-2xl uppercase">
                 {slide.title}
               </h2>
 
@@ -101,7 +108,7 @@ const HeroSlider: React.FC = () => {
         </div>
       ))}
 
-      {/* Indicators (Pill bars at center bottom) */}
+      {/* Navigation Indicators */}
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex gap-2">
         {SLIDES.map((_, idx) => (
           <button
@@ -114,17 +121,17 @@ const HeroSlider: React.FC = () => {
         ))}
       </div>
 
-      {/* Navigation Arrows (Bottom Right) */}
+      {/* Navigation Arrows */}
       <div className="absolute bottom-10 right-10 z-20 flex gap-4">
         <button
           onClick={prevSlide}
-          className="p-3 border border-white/20 rounded-full text-white hover:bg-white hover:text-faz-black transition-all"
+          className="p-3 border border-white/20 rounded-full text-white hover:bg-white hover:text-black transition-all"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
         <button
           onClick={nextSlide}
-          className="p-3 border border-white/20 rounded-full text-white hover:bg-white hover:text-faz-black transition-all"
+          className="p-3 border border-white/20 rounded-full text-white hover:bg-white hover:text-black transition-all"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
@@ -133,4 +140,5 @@ const HeroSlider: React.FC = () => {
   );
 };
 
+// Ensure this default export is here!
 export default HeroSlider;

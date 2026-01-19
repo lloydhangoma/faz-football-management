@@ -166,9 +166,14 @@ export default function Navbar() {
                             <Instagram className="w-3.5 h-3.5 cursor-pointer hover:text-faz-green transition" />
                             <Youtube className="w-3.5 h-3.5 cursor-pointer hover:text-faz-green transition" />
                         </div>
-                        <Link to="/shop" className="flex items-center gap-1.5 hover:text-faz-green transition">
-                            <ShoppingBag className="w-3.5 h-3.5" /> SHOP
-                        </Link>
+                       <a 
+        href="https://faz-market.online/" 
+        target="_blank" 
+        rel="noopener noreferrer" 
+        className="flex items-center gap-1.5 hover:text-faz-green transition uppercase"
+    >
+        <ShoppingBag className="w-3.5 h-3.5" /> SHOP
+    </a>
                         <span className="opacity-30">|</span>
                         <Link to="/login" className="flex items-center gap-1.5 hover:text-faz-green transition">
                             <User className="w-3.5 h-3.5" /> LOGIN

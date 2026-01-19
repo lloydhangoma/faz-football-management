@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+/* Keep your custom variables below */
+:root {
+  --faz-green: #005A2B;
+  --faz-orange: #f97316;
+}
