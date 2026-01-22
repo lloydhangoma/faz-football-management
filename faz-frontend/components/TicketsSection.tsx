@@ -72,7 +72,7 @@ const TicketsSection: React.FC = () => {
                   <div className="text-xs text-gray-500">From</div>
                   <div className="text-xl font-bold text-faz-green">{t.price}</div>
                 </div>
-                <button className="bg-faz-green text-white px-6 py-3 rounded-md font-semibold shadow hover:opacity-95">View &amp; Select Seats</button>
+                <button className="bg-faz-green text-black px-6 py-3 rounded-md font-semibold shadow hover:opacity-95">View &amp; Select Seats</button>
               </div>
             </div>
           ))}

@@ -1,7 +1,10 @@
 @import "tailwindcss";
 
-/* Keep your custom variables below */
-:root {
-  --faz-green: #005A2B;
-  --faz-orange: #f97316;
+@theme {
+  /* This creates the utilities you are trying to use */
+  --color-faz-green: #005A2B;
+  --color-faz-orange: #f97316;
+  --color-faz-dark: #062916;
 }
+
+/* Any other custom CSS can go below */

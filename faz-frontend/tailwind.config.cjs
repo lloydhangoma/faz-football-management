@@ -1,8 +1,21 @@
-content: [
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
     "./index.html",
-    "./*.{ts,tsx}",         // Add this to catch App.tsx and index.tsx in the root
-    "./pages/**/*.{ts,tsx}",
+    "./App.tsx",
+    "./index.tsx",
     "./components/**/*.{ts,tsx}",
-    "./app/**/*.{ts,tsx}",
-    "./src/**/*.{ts,tsx}",
-],
+    "./pages/**/*.{ts,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        // Defining these is mandatory for the classes to work
+        'faz-green': '#006837', 
+        'faz-dark': '#062916',
+        'faz-orange': '#F7941D',
+      },
+    },
+  },
+  plugins: [],
+}
