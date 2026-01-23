@@ -4,7 +4,7 @@ import {
   Menu, 
   X as CloseIcon, 
   ChevronDown,
-  User,
+  // User, // Removed User import as it is no longer used
   Facebook,
   Instagram,
   Youtube,
@@ -158,10 +158,7 @@ export default function Navbar() {
                         <a href="https://faz-market.online/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-[#005A2B] transition uppercase">
                             <ShoppingCart className="w-3.5 h-3.5" /> MYFAZSHOP
                         </a>
-                        <span className="opacity-30">|</span>
-                        <Link to="/login" className="flex items-center gap-1.5 hover:text-[#005A2B] transition uppercase">
-                            <User className="w-3.5 h-3.5" /> LOGIN
-                        </Link>
+                        {/* Login Removed */}
                     </div>
 
                     {/* Desktop Navigation Area */}
