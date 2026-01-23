@@ -15,11 +15,11 @@ const FEATURED_NEWS: NewsItem = {
 const SECONDARY_NEWS: NewsItem[] = [
   {
     id: 's1',
-    title: 'Women\'s League: Green Buffaloes extend lead at the top',
-    summary: 'A dominant performance at the Arakan Barracks sees the defending champions keep their perfect record.',
+    title: 'Women\'s Team: Copper queens kick start Wafcon Preparations',
+    summary: 'The Copper Queens have officially begun their preparations for the upcoming Wafcon tournament.',
     category: 'Women\'s Football',
     date: '1 Day Ago',
-    imageUrl: 'https://images.unsplash.com/photo-1552667466-07f704e1c7ee?auto=format&fit=crop&q=80&w=800'
+    imageUrl: 'https://res.cloudinary.com/djuz1gf78/image/upload/v1769091744/copperQueenTraining_g5ypme.jpg'
   },
   {
     id: 's2',
@@ -27,13 +27,13 @@ const SECONDARY_NEWS: NewsItem[] = [
     summary: 'The technical directorate has unveiled a revamped curriculum for CAF C and D licenses across all provinces.',
     category: 'Development',
     date: '2 Days Ago',
-    imageUrl: 'https://images.unsplash.com/photo-1517466787929-bc90951d0974?auto=format&fit=crop&q=80&w=800'
+    imageUrl: 'https://res.cloudinary.com/djuz1gf78/image/upload/v1769085842/fazPhoto1_g4eo3r.jpg'
   },
   {
     id: 's3',
-    title: 'National Division One: City of Lusaka keeps promotion hopes alive',
-    summary: 'A clinical finish from "Yamoto" ensures all three points in a crucial away fixture.',
-    category: 'Leagues',
+    title: 'Futsal National team: Zambia clinches victory in COSAFA Futsal Championship opener',
+    summary: 'The Zambian futsal national team has secured a hard-fought victory in their opening match of the COSAFA Futsal Championship.',
+    category: 'Futsal',
     date: '3 Days Ago',
     imageUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=800'
   },
