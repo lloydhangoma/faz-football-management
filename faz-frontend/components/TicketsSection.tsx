@@ -1,4 +1,5 @@
 import React from 'react';
+import { ArrowRight, Calendar, Clock, MapPin } from 'lucide-react';
 
 const sampleTickets = [
   {
@@ -11,7 +12,6 @@ const sampleTickets = [
     time: '15:00',
     venue: 'National Heroes Stadium, Lusaka',
     price: 'ZMW 80.00',
-    tag: 'World Cup Qualifier',
   },
   {
     id: 2,
@@ -23,7 +23,6 @@ const sampleTickets = [
     time: '15:00',
     venue: 'Levy Mwanawasa Stadium, Ndola',
     price: 'ZMW 60.00',
-    tag: 'Limited',
   },
   {
     id: 3,
@@ -35,44 +34,77 @@ const sampleTickets = [
     time: '18:00',
     venue: 'Nkana Stadium, Kitwe',
     price: 'ZMW 55.00',
-    tag: 'Super League',
   },
 ];
 
 const TicketsSection: React.FC = () => {
   return (
-    <section className="py-12 bg-white">
-      <div className="max-w-6xl mx-auto px-4">
-        <h2 className="text-3xl font-extrabold text-faz-dark mb-6">Tickets</h2>
+    <section className="py-16 bg-white">
+      <div className="max-w-7xl mx-auto px-6">
+        
+        {/* Section Header with Fading Orange Line */}
+        <div className="mb-12">
+          <div className="flex items-end justify-between mb-4">
+            <h2 className="text-4xl md:text-5xl font-black text-slate-900 uppercase tracking-tighter leading-none">
+              Tickets
+            </h2>
+            <button className="flex items-center gap-1 text-[#f97316] font-bold text-sm md:text-base uppercase group transition-colors hover:text-green-700">
+              Buy Tickets <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+            </button>
+          </div>
+          {/* Custom Fading Divider */}
+          <div className="h-[4px] w-full bg-gradient-to-r from-[#f97316] via-[#f97316]/60 to-transparent" />
+        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Tickets Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {sampleTickets.map((t) => (
-            <div key={t.id} className="rounded-lg border border-gray-100 shadow-sm overflow-hidden bg-white">
-              <div className="p-6">
-                <div className="flex items-center justify-between text-center">
-                  <div className="flex-1">
-                    <div className="w-20 h-20 mx-auto rounded-full bg-gray-100 flex items-center justify-center text-2xl font-bold text-faz-dark">{t.homeAbbr}</div>
-                    <p className="mt-3 text-sm font-semibold text-gray-700">{t.home}</p>
+            <div key={t.id} className="group rounded-xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden bg-white">
+              <div className="p-8">
+                {/* Team Logos/Abbr Section */}
+                <div className="flex items-center justify-between mb-8">
+                  <div className="text-center flex-1">
+                    <div className="w-20 h-20 mx-auto rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-2xl font-black text-slate-800 shadow-inner group-hover:bg-white transition-colors">
+                      {t.homeAbbr}
+                    </div>
+                    <p className="mt-3 text-sm font-bold text-slate-600 uppercase tracking-wide">{t.home}</p>
                   </div>
-                  <div className="mx-4 text-gray-400 font-bold">vs</div>
-                  <div className="flex-1">
-                    <div className="w-20 h-20 mx-auto rounded-full bg-gray-100 flex items-center justify-center text-2xl font-bold text-faz-dark">{t.awayAbbr}</div>
-                    <p className="mt-3 text-sm font-semibold text-gray-700">{t.away}</p>
+                  
+                  <div className="px-4 text-xs font-black text-gray-300 uppercase italic">vs</div>
+                  
+                  <div className="text-center flex-1">
+                    <div className="w-20 h-20 mx-auto rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-2xl font-black text-slate-800 shadow-inner group-hover:bg-white transition-colors">
+                      {t.awayAbbr}
+                    </div>
+                    <p className="mt-3 text-sm font-bold text-slate-600 uppercase tracking-wide">{t.away}</p>
                   </div>
                 </div>
 
-                <div className="mt-6 text-gray-500 text-sm space-y-2">
-                  <div>📅 {t.date} &nbsp; ⏰ {t.time}</div>
-                  <div>📍 {t.venue}</div>
+                {/* Match Details */}
+                <div className="space-y-3 text-slate-500">
+                  <div className="flex items-center gap-3 text-sm font-medium">
+                    <Calendar className="w-4 h-4 text-[#f97316]" />
+                    <span>{t.date}</span>
+                    <span className="text-gray-300">|</span>
+                    <Clock className="w-4 h-4 text-[#f97316]" />
+                    <span>{t.time}</span>
+                  </div>
+                  <div className="flex items-start gap-3 text-sm font-medium leading-tight">
+                    <MapPin className="w-4 h-4 text-[#f97316] mt-0.5" />
+                    <span>{t.venue}</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="border-t border-gray-100 px-6 py-4 flex items-center justify-between bg-gray-50">
+              {/* Footer / Pricing */}
+              <div className="px-8 py-6 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
                 <div>
-                  <div className="text-xs text-gray-500">From</div>
-                  <div className="text-xl font-bold text-faz-green">{t.price}</div>
+                  <p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest mb-0.5">Starting From</p>
+                  <p className="text-2xl font-black text-slate-900">{t.price}</p>
                 </div>
-                <button className="bg-faz-green text-black px-6 py-3 rounded-md font-semibold shadow hover:opacity-95">View &amp; Select Seats</button>
+                <button className="bg-slate-900 text-white px-5 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider hover:bg-[#f97316] transition-all shadow-md active:scale-95">
+                  Select Seats
+                </button>
               </div>
             </div>
           ))}
