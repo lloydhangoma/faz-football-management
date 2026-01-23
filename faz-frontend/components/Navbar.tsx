@@ -98,14 +98,25 @@ export default function Navbar() {
 
     return (
         <header className="w-full sticky top-0 z-50 bg-white shadow-sm overflow-visible">
-            <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row items-stretch min-h-[80px]">
+            {/* FIX: Changed 'max-w-[1440px] mx-auto' to 'w-full'.
+               This removes the centering constraint so the logo hits the left edge.
+            */}
+            <div className="w-full flex flex-col md:flex-row items-stretch min-h-[80px]">
                 
                 {/* 1. BRAND LOGO BLOCK */}
                 <div 
-                    className="hidden md:flex md:w-auto shrink-0 items-center text-white relative -mr-12"
-                    style={{ backgroundColor: BRAND_GREEN, skewX: '-20deg', paddingRight: '60px' }}
+                    className="hidden md:flex md:w-auto shrink-0 items-center text-white pr-8 relative z-20"
+                    style={{ backgroundColor: BRAND_GREEN }}
                 >
-                    <Link to="/" className="flex items-center gap-5 group" style={{ skewX: '20deg' }}>
+                    {/* --- THE RIGHT SLANT WING --- */}
+                    <div 
+                        className="absolute top-0 bottom-0 right-[-15px] w-[30px] z-[-1]"
+                        style={{ backgroundColor: BRAND_GREEN, transform: 'skewX(-20deg)' }}
+                    />
+                    
+                    {/* Content */}
+                    {/* Added pl-6 here so the text doesn't touch the screen edge, but the green background does */}
+                    <Link to="/" className="flex items-center gap-5 group relative z-10 pl-6">
                         <div className="border-[1.5px] border-white/80 p-1 bg-transparent shrink-0">
                             <img 
                                 src={CLUB_LOGO} 
@@ -154,7 +165,7 @@ export default function Navbar() {
                     </div>
 
                     {/* Desktop Navigation Area */}
-                    <div className="flex-1 flex items-stretch px-4 lg:px-8">
+                    <div className="flex-1 flex items-stretch px-4 lg:px-8 pl-10">
                         <nav className="flex items-stretch flex-1">
                             <ul className="flex items-stretch">
                                 {NAV_ITEMS.map((item, index) => {

@@ -9,7 +9,7 @@ const FEATURED_NEWS: NewsItem = {
   summary: 'In a match that captivated the continent, the Zambian senior men\'s national team displayed exceptional resilience to edge out the Atlas Lions...',
   category: 'Match Report',
   date: '24 May 2024',
-  imageUrl: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=1200'
+  imageUrl: 'https://res.cloudinary.com/dsztrq47q/image/upload/v1769158393/605443511_1421461252971031_410507134279807307_n_zjrud4.jpg'
 };
 
 const SECONDARY_NEWS: NewsItem[] = [
@@ -35,7 +35,7 @@ const SECONDARY_NEWS: NewsItem[] = [
     summary: 'The Zambian futsal national team has secured a hard-fought victory in their opening match of the COSAFA Futsal Championship.',
     category: 'Futsal',
     date: '3 Days Ago',
-    imageUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=800'
+    imageUrl: 'https://res.cloudinary.com/dsztrq47q/image/upload/v1769159890/603767735_1416199203497236_4074358825938493271_n_xzbm1i.jpg'
   },
   {
     id: 's4',
@@ -43,7 +43,7 @@ const SECONDARY_NEWS: NewsItem[] = [
     summary: 'The young squad has gathered in Lusaka to begin preparations for the final qualifying round.',
     category: 'Youth Football',
     date: '4 Days Ago',
-    imageUrl: 'https://images.unsplash.com/photo-1431324155629-1a6eda1eed2d?auto=format&fit=crop&q=80&w=800'
+    imageUrl: 'https://res.cloudinary.com/dsztrq47q/image/upload/v1769160532/588568895_122105689821109609_3266413841182249721_n_scuicg.jpg'
   }
 ];
 
@@ -130,26 +130,30 @@ const NewsSection: React.FC = () => {
                 <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">FAZ on Social Media</h3>
               </div>
 
-              {/* Video Highlight Card */}
-              <div className="relative aspect-video bg-black overflow-hidden group cursor-pointer mb-6 border border-gray-100">
-                <img 
-                  src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=800" 
-                  alt="Video Highlight"
-                  className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white shadow-xl group-hover:scale-110 transition-transform">
-                    <Play className="w-8 h-8 fill-current" />
-                  </div>
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 to-transparent">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Youtube className="w-4 h-4 text-red-600" />
-                    <span className="text-[10px] font-black text-white uppercase tracking-widest">YouTube Highlight</span>
-                  </div>
-                  <h5 className="text-sm font-bold text-white leading-tight">Zambia vs Morocco: All Goals and Highlights | International Friendly</h5>
-                </div>
-              </div>
+              <a 
+  href="https://www.youtube.com/watch?v=8lXBQWNyo9I" 
+  target="_blank" 
+  rel="noopener noreferrer" 
+  className="block relative aspect-video bg-black overflow-hidden group cursor-pointer mb-6 border border-gray-100"
+>
+  <img 
+    src="https://res.cloudinary.com/dsztrq47q/image/upload/v1769158659/605386868_1421461546304335_2743105522785389162_n_tivxvg.jpg" 
+    alt="Video Highlight"
+    className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
+  />
+  <div className="absolute inset-0 flex items-center justify-center">
+    <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white shadow-xl group-hover:scale-110 transition-transform">
+      <Play className="w-8 h-8 fill-current" />
+    </div>
+  </div>
+  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 to-transparent">
+    <div className="flex items-center gap-2 mb-1">
+      <Youtube className="w-4 h-4 text-red-600" />
+      <span className="text-[10px] font-black text-white uppercase tracking-widest">YouTube Highlight</span>
+    </div>
+    <h5 className="text-sm font-bold text-white leading-tight">Zambia vs Morocco: All Goals and Highlights | International Friendly</h5>
+  </div>
+</a>
 
               {/* Social Link List */}
               <div className="space-y-4">

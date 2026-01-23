@@ -29,7 +29,7 @@ const SLIDES: NewsSlide[] = [
   },
   {
     id: 3,
-    image: 'https://res.cloudinary.com/djuz1gf78/image/upload/v1768149064/under_17_hnyht0.jpg',
+    image: 'https://res.cloudinary.com/dsztrq47q/image/upload/v1769156646/Gemini_Generated_Image_n12epin12epin12e_zhrgrw.png',
     category: 'YOUTH DEVELOPMENT',
     title: 'Under-17 squad camping commences ahead of COSAFA Championship',
     date: '20 May 2024',
@@ -37,7 +37,7 @@ const SLIDES: NewsSlide[] = [
   },
   {
     id: 4,
-    image: 'https://res.cloudinary.com/djuz1gf78/image/upload/v1768149065/Futsal_team._wthik0.jpg',
+    image: 'https://res.cloudinary.com/dsztrq47q/image/upload/v1769157171/Gemini_Generated_Image_pvqxy2pvqxy2pvqx_qnmcgl.png',
     category: 'FUTSAL',
     title: 'Zambia Futsal National Team eyes victory in AFCON Finals',
     date: '28 May 2024',
