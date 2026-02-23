@@ -2,6 +2,8 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import About from './pages/About/About';
+
+import Legends from './pages/Legends';
 import Introduction from './pages/About/Introduction';
 import President from './pages/About/President';
 import Mission from './pages/About/Mission';
@@ -36,6 +38,8 @@ const App: React.FC = () => {
           <Route path="/teams/national-women" element={<NationalTeamWomen />} />
           <Route path="/teams/u20" element={<U20Teams />} />
           <Route path="/teams/u17" element={<U17Teams />} />
+          <Route path="/legends" element={<Legends />} />
+
           {/* Add other routes as needed */}
         </Routes>
       </main>
