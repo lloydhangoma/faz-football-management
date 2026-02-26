@@ -1,10 +1,34 @@
 import React, { useRef, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
-const eras = [
+interface Family {
+  name: string;
+  text: string;
+}
+
+interface Era {
+  title: string;
+  decade: string;
+  imageUrl: string;
+  families: Family[];
+}
+
+interface Player {
+  name: string;
+  title: string;
+  imageUrl: string;
+  description: string;
+}
+
+interface Stat {
+  value: string;
+  label: string;
+}
+
+const eras: Era[] = [
   {
     title: "Historic Pioneer Team KK 11",
-    decade: "1960s–1980s",
+    decade: "1960s-1980s",
     imageUrl: "https://res.cloudinary.com/dsztrq47q/image/upload/v1771497299/118631293_3237148319674190_6231397125503319875_n_jepj83.jpg",
     families: [
       {
@@ -19,7 +43,7 @@ const eras = [
   },
   {
     title: "AFCON Era Legends",
-    decade: "1990s–2000s",
+    decade: "1990s-2000s",
     imageUrl: "https://res.cloudinary.com/dsztrq47q/image/upload/v1771497600/485743874_1209995393823497_8332294954445413621_n.jpg_n4pm3e.jpg",
     families: [
       {
@@ -57,7 +81,7 @@ const eras = [
   },
 ];
 
-const legendaryPlayers = [
+const legendaryPlayers: Player[] = [
   {
     name: "Godfrey Chitalu",
     title: "The Ultimate Goalscorer",
@@ -79,25 +103,25 @@ const legendaryPlayers = [
   {
     name: "Barbra Banda",
     title: "The Modern Trailblazer",
-    imageUrl: "https://res.cloudinary.com/dsztrq47q/image/upload/v1771838601/515992318_713082761545170_5863502301176627390_n.jpg_sw3ows.jpg", // Replace with an image of Barbra
+    imageUrl: "https://res.cloudinary.com/dsztrq47q/image/upload/v1771838601/515992318_713082761545170_5863502301176627390_n.jpg_sw3ows.jpg",
     description: "First player in Olympic history to score back-to-back hat-tricks. A global superstar taking the Copper Queens to unprecedented heights."
   },
   {
     name: "Alex Chola",
     title: "The Master Playmaker",
-    imageUrl: "https://res.cloudinary.com/dsztrq47q/image/upload/v1771838135/97994317_2920070888047421_655132647516798976_n.jpg_qddfzr.jpg", // Replace with image
+    imageUrl: "https://res.cloudinary.com/dsztrq47q/image/upload/v1771838135/97994317_2920070888047421_655132647516798976_n.jpg_qddfzr.jpg",
     description: "One of the most gifted dribblers and playmakers in African history, remembered as a true genius of the KK11 era."
   },
   {
     name: "Stoppila Sunzu",
     title: "Hero of Libreville",
-    imageUrl: "https://res.cloudinary.com/dsztrq47q/image/upload/v1771838243/518266916_10171978474445054_7917181035867965219_n.jpg_jowi5g.jpg", // Replace with image
+    imageUrl: "https://res.cloudinary.com/dsztrq47q/image/upload/v1771838243/518266916_10171978474445054_7917181035867965219_n.jpg_jowi5g.jpg",
     description: "Cemented his eternal legacy by scoring the winning penalty in the 2012 AFCON final shootout against Ivory Coast."
   },
   {
     name: "Dickson Makwaza",
     title: "The Pioneer Captain",
-    imageUrl: "https://res.cloudinary.com/dsztrq47q/image/upload/v1771838339/476342917_1137053607861628_5487692093780309495_n.jpg_nbv4kv.jpg", // Replace with image
+    imageUrl: "https://res.cloudinary.com/dsztrq47q/image/upload/v1771838339/476342917_1137053607861628_5487692093780309495_n.jpg_nbv4kv.jpg",
     description: "An exceptional defender and leader who captained the national team to its first-ever AFCON final appearance in 1974."
   },
   {
@@ -108,14 +132,13 @@ const legendaryPlayers = [
   }
 ];
 
-const stats = [
-  { value: "30+", label: "Football Families" },
-  { value: "100+", label: "Top-Flight Siblings" },
-  { value: "60+", label: "Years of Heritage" },
-  { value: "1", label: "World Record" },
-];
+interface FadeInProps {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+}
 
-const FadeIn: React.FC<{ children: React.ReactNode; className?: string; delay?: number }> = ({ children, className, delay = 0 }) => {
+const FadeIn: React.FC<FadeInProps> = ({ children, className, delay = 0 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [isInView, setIsInView] = useState(false);
 
@@ -123,7 +146,12 @@ const FadeIn: React.FC<{ children: React.ReactNode; className?: string; delay?: 
     const el = ref.current;
     if (!el) return;
     const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setIsInView(true); observer.disconnect(); } },
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsInView(true);
+          observer.disconnect();
+        }
+      },
       { rootMargin: "-80px" }
     );
     observer.observe(el);
@@ -144,18 +172,26 @@ const FadeIn: React.FC<{ children: React.ReactNode; className?: string; delay?: 
 };
 
 const Legends: React.FC = () => {
+  const stats: Stat[] = [
+    { value: "30+", label: "Football Families" },
+    { value: "100+", label: "Top-Flight Siblings" },
+    { value: "60+", label: "Years of Heritage" },
+    { value: "1", label: "World Record" },
+  ];
+
   return (
     <div className="w-full font-sans text-gray-900 bg-white overflow-x-hidden">
       
       {/* HERO */}
-      <section className="relative h-[100svh] min-h-[600px] overflow-hidden">
+      <section className="relative h-[500px] md:h-[600px] overflow-hidden">
         <img 
           src="https://res.cloudinary.com/dsztrq47q/image/upload/v1771495321/632311964_1507941111338062_3582660004753275685_n_dexvrn.jpg"
           alt="Zambia Football Heritage"
-          className="w-full h-full object-cover scale-105"
+          className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20 flex items-end">
-          <div className="max-w-[1440px] mx-auto px-6 md:px-12 w-full pb-16 md:pb-24">
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent flex items-center">
+          <div className="max-w-[1440px] mx-auto px-4 md:px-12 w-full">
+            <div className="max-w-2xl">
             <motion.p
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
@@ -168,7 +204,7 @@ const Legends: React.FC = () => {
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.4 }}
-              className="font-sans text-5xl md:text-7xl lg:text-8xl font-bold text-white uppercase tracking-tight leading-[0.9] mb-6 max-w-4xl"
+              className="text-5xl md:text-6xl font-condensed font-black text-white uppercase tracking-tighter leading-none mb-6"
             >
               Zambia's Football Legacy
             </motion.h1>
@@ -176,7 +212,7 @@ const Legends: React.FC = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.8 }}
-              className="text-lg md:text-xl text-white/80 mb-10 leading-relaxed max-w-xl"
+              className="text-lg md:text-xl text-gray-100 mb-8 leading-relaxed max-w-xl"
             >
               The most football families to ever represent a single nation. Discover the fathers, sons, and brothers who built our national game.
             </motion.p>
@@ -185,46 +221,54 @@ const Legends: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 1.1 }}
               href="#timeline"
-              className="inline-block px-10 py-4 bg-orange-600 hover:bg-orange-500 text-white font-sans font-bold uppercase tracking-[0.25em] text-sm transition-all hover:translate-y-[-2px] shadow-lg shadow-orange-600/30"
+              className="inline-block px-8 py-4 bg-faz-orange hover:bg-faz-orange/90 text-white font-black uppercase tracking-widest text-sm transition-all transform hover:scale-105 shadow-lg"
             >
               Explore the Legends
             </motion.a>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* STATS BAR */}
-      <section className="bg-green-900 py-0 border-b border-green-800">
-        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4">
-          {stats.map((stat, i) => (
-            <FadeIn key={i} delay={i * 0.1}>
-              <div className={`text-center py-10 md:py-14 ${i < stats.length - 1 ? 'border-r border-white/10' : ''}`}>
-                <p className="font-sans text-4xl md:text-5xl font-bold text-orange-500 mb-2">{stat.value}</p>
-                <p className="font-sans text-white/60 uppercase tracking-[0.2em] text-xs">{stat.label}</p>
-              </div>
-            </FadeIn>
-          ))}
-        </div>
-      </section>
+      {/* EXECUTIVE SUMMARY & INTEGRATED METRICS */}
+      <section className="relative py-24 md:py-32 px-6 bg-gradient-to-b from-white via-orange-50/40 to-white border-b border-orange-100/60 overflow-hidden">
+        <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-orange-200/25 blur-3xl" />
+        <div className="absolute -bottom-24 -right-16 w-72 h-72 rounded-full bg-green-200/30 blur-3xl" />
+        <div className="max-w-6xl mx-auto relative">
+          <FadeIn>
+            <div className="max-w-3xl mx-auto text-center mb-20">
+              <div className="w-12 h-[2px] bg-orange-500 mx-auto mb-10" />
+              <p className="text-gray-600 text-xl md:text-2xl leading-[1.8] font-light italic">
+                Zambian football is built on lineage, community, and generational excellence. Historical records indicate that no other nation has produced as many brothers, fathers, and sons who have represented their national team across multiple eras.
+              </p>
+              <p className="text-gray-900 text-xl md:text-2xl leading-[1.8] font-semibold mt-6 uppercase tracking-tight">
+                Our football is not just played; it is passed down.
+              </p>
+            </div>
+          </FadeIn>
 
-      {/* EXECUTIVE SUMMARY */}
-      <section className="py-24 md:py-32 px-6 bg-white border-b border-gray-100">
-        <FadeIn>
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="w-12 h-[2px] bg-orange-500 mx-auto mb-10" />
-            <p className="text-gray-600 text-xl md:text-2xl leading-[1.8] font-light italic">
-              Zambian football is built on lineage, community, and generational excellence. Historical records indicate that no other nation has produced as many brothers, fathers, and sons who have represented their national team across multiple eras.
-            </p>
-            <p className="text-gray-900 text-xl md:text-2xl leading-[1.8] font-semibold mt-6">
-              Our football is not just played; it is passed down.
-            </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+            {stats.map((stat, i) => (
+              <FadeIn key={i} delay={0.2 + i * 0.1} className="text-center">
+                <div className="space-y-2 rounded-2xl border border-orange-100/80 bg-white/90 backdrop-blur-sm px-4 py-8 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                  <p className="font-sans text-5xl md:text-6xl font-bold text-green-900 leading-none">
+                    {stat.value}
+                  </p>
+                  <div className="w-10 h-1 bg-orange-500 mx-auto mb-4 rounded-full" />
+                  <p className="font-sans text-gray-500 uppercase tracking-[0.2em] text-[10px] md:text-xs font-bold leading-tight">
+                    {stat.label}
+                  </p>
+                </div>
+              </FadeIn>
+            ))}
           </div>
-        </FadeIn>
+        </div>
       </section>
 
       {/* TIMELINE OF LEGENDS */}
-      <section id="timeline" className="py-24 md:py-32 px-6 bg-gray-50 border-b border-gray-200">
-        <div className="max-w-7xl mx-auto">
+      <section id="timeline" className="relative py-24 md:py-32 px-6 bg-gradient-to-b from-gray-50 via-white to-gray-50 border-b border-gray-200 overflow-hidden">
+        <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-green-100/30 to-transparent pointer-events-none" />
+        <div className="max-w-7xl mx-auto relative">
           <FadeIn>
             <div className="text-center mb-20 md:mb-28">
               <p className="font-sans text-orange-600 uppercase tracking-[0.3em] text-xs mb-4 font-semibold">Through the Decades</p>
@@ -234,39 +278,39 @@ const Legends: React.FC = () => {
             </div>
           </FadeIn>
 
-          <div className="space-y-32 md:space-y-40 relative">
-            <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-px bg-gray-300 -translate-x-1/2" />
+          <div className="space-y-28 md:space-y-36 relative">
+            <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-orange-300 to-transparent -translate-x-1/2" />
 
             {eras.map((era, index) => (
               <div key={index} className="relative">
-                <div className="hidden lg:flex absolute left-1/2 top-8 -translate-x-1/2 z-10 w-5 h-5 rounded-full bg-orange-500 border-4 border-gray-50 shadow-lg" />
+                <div className="hidden lg:flex absolute left-1/2 top-8 -translate-x-1/2 z-10 w-5 h-5 rounded-full bg-orange-500 border-4 border-white shadow-lg shadow-orange-300/50" />
 
                 <div className={`flex flex-col gap-10 lg:gap-16 items-center ${
                   index % 2 !== 0 ? 'lg:flex-row-reverse' : 'lg:flex-row'
                 }`}>
                   <FadeIn className="w-full lg:w-[45%]" delay={0.1}>
-                    <div className="group relative aspect-[4/3] rounded-2xl overflow-hidden shadow-xl border border-gray-200">
+                    <div className="group relative aspect-[4/3] rounded-3xl overflow-hidden shadow-xl border border-white ring-1 ring-black/5">
                       <img 
                         src={era.imageUrl} 
                         alt={era.title} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
                         loading="lazy"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                       <div className="absolute bottom-0 left-0 p-6 md:p-8">
-                        <span className="font-sans text-orange-400 text-sm uppercase tracking-[0.3em] font-bold">{era.decade}</span>
+                        <span className="font-sans text-orange-300 text-xs md:text-sm uppercase tracking-[0.35em] font-bold">{era.decade}</span>
                       </div>
                     </div>
                   </FadeIn>
 
                   <FadeIn className="w-full lg:w-[45%]" delay={0.3}>
-                    <div>
+                    <div className="rounded-3xl border border-gray-200/80 bg-white/90 backdrop-blur-sm p-8 md:p-10 shadow-lg">
                       <h3 className="font-sans text-3xl md:text-4xl font-bold text-green-900 mb-8 uppercase tracking-tight leading-tight">
                         {era.title}
                       </h3>
-                      <div className="space-y-8">
+                      <div className="space-y-4">
                         {era.families.map((fam, fIndex) => (
-                          <div key={fIndex} className="pl-5 border-l-2 border-orange-200 hover:border-orange-500 transition-colors duration-300">
+                          <div key={fIndex} className="pl-5 py-4 pr-4 border-l-4 border-orange-200 rounded-r-xl bg-white hover:border-orange-500 hover:shadow-sm transition-all duration-300">
                             <h4 className="font-sans text-lg font-bold text-gray-900 mb-2 uppercase tracking-wide">{fam.name}</h4>
                             <p className="text-gray-600 leading-relaxed">{fam.text}</p>
                           </div>
@@ -281,10 +325,10 @@ const Legends: React.FC = () => {
         </div>
       </section>
 
-      
-      {/* INDIVIDUAL LEGENDARY PLAYERS (Hall of Fame Icons) */}
-      <section className="py-24 md:py-32 px-6 bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto">
+      {/* INDIVIDUAL LEGENDARY PLAYERS */}
+      <section className="relative py-24 md:py-32 px-6 bg-white border-b border-gray-200 overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-orange-100/40 rounded-full blur-3xl pointer-events-none" />
+        <div className="max-w-7xl mx-auto relative">
           <FadeIn>
             <div className="text-center mb-16 md:mb-24">
               <p className="font-sans text-orange-600 uppercase tracking-[0.3em] text-xs mb-4 font-semibold">Individual Brilliance</p>
@@ -295,10 +339,10 @@ const Legends: React.FC = () => {
             </div>
           </FadeIn>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8">
             {legendaryPlayers.map((player, index) => (
               <FadeIn key={index} delay={(index % 4) * 0.15} className="h-full">
-                <div className="group h-full flex flex-col bg-gray-50 rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2">
+                <div className="group h-full flex flex-col bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-md hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
                   <div className="aspect-[4/5] relative overflow-hidden bg-gray-200">
                     <img 
                       src={player.imageUrl} 
@@ -306,20 +350,19 @@ const Legends: React.FC = () => {
                       className="w-full h-full object-cover group-hover:scale-110 group-hover:rotate-1 transition-transform duration-700 ease-out"
                       loading="lazy"
                     />
-                    <div className="absolute inset-0  group-hover:opacity-100 transition-opacity duration-500" />
-                    <div className="absolute bottom-0 left-0 w-full p-6 translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
-                      <p className="font-sans text-orange-400 text-xs uppercase tracking-[0.2em] font-bold mb-1">{player.title}</p>
+                    <div className="absolute bottom-0 left-0 w-full p-6 translate-y-2 group-hover:translate-y-0 transition-transform duration-500 z-10">
+                      <p className="font-sans text-orange-300 text-xs uppercase tracking-[0.25em] font-bold mb-1">{player.title}</p>
                       <h4 className="font-sans text-2xl font-bold text-white uppercase tracking-wide leading-none">{player.name}</h4>
                     </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
                   </div>
-                  <div className="p-6 flex-grow flex flex-col justify-between bg-white relative">
-                    <div className="absolute top-0 left-6 right-6 h-px bg-gray-100 -mt-px"></div>
-                    <p className="text-gray-600 leading-relaxed text-sm">
+                  <div className="p-6 flex-grow flex flex-col justify-between bg-gradient-to-b from-white to-gray-50">
+                    <p className="text-gray-600 leading-relaxed text-sm md:text-[15px]">
                       {player.description}
                     </p>
-                    <button className="mt-6 text-green-900 font-bold uppercase tracking-widest text-xs hover:text-orange-600 transition-colors flex items-center gap-2 w-fit">
-                      Read Profile 
-                      <span className="text-orange-500 group-hover:translate-x-1 transition-transform duration-300">→</span>
+                    <button className="mt-6 text-green-900 font-bold uppercase tracking-[0.2em] text-xs hover:text-orange-600 transition-colors flex items-center gap-2 w-fit">
+                      Read Profile
+                      <span className="text-orange-500 ">-&gt;</span>
                     </button>
                   </div>
                 </div>
@@ -329,7 +372,7 @@ const Legends: React.FC = () => {
           
           <FadeIn delay={0.4}>
             <div className="mt-16 text-center">
-               <button className="px-8 py-3 bg-transparent text-green-900 font-sans font-bold hover:bg-gray-50 transition-all uppercase tracking-[0.2em] text-sm border-2 border-gray-200 rounded-sm">
+                 <button className="px-8 py-3 bg-white text-green-900 font-sans font-bold hover:bg-gray-100 transition-all uppercase tracking-[0.2em] text-sm border-2 border-gray-200 rounded-full ">
                   View Full Hall of Fame
                 </button>
             </div>
@@ -338,8 +381,9 @@ const Legends: React.FC = () => {
       </section>
 
       {/* CONTEMPORARY ICONS */}
-      <section className="py-24 md:py-32 px-6 bg-green-50 border-b border-green-100">
-        <div className="max-w-5xl mx-auto">
+      <section className="relative py-24 md:py-32 px-6 bg-gradient-to-br from-green-50 via-white to-green-100/50 border-b border-green-100 overflow-hidden">
+        <div className="absolute -top-16 right-0 w-72 h-72 rounded-full bg-green-200/40 blur-3xl pointer-events-none" />
+        <div className="max-w-5xl mx-auto relative">
           <FadeIn>
             <div className="text-center mb-14">
               <p className="font-sans text-orange-600 uppercase tracking-[0.3em] text-xs mb-4 font-semibold">Still Going Strong</p>
@@ -349,7 +393,7 @@ const Legends: React.FC = () => {
             </div>
           </FadeIn>
           <FadeIn delay={0.2}>
-            <div className="space-y-6 text-gray-700 leading-relaxed text-lg max-w-4xl mx-auto text-center">
+            <div className="space-y-6 text-gray-700 leading-relaxed text-lg max-w-4xl mx-auto text-center rounded-3xl border border-green-100 bg-white/90 shadow-lg p-8 md:p-12">
               <p>
                 The legacy continues into the modern era and across domestic leagues. Notable football lineages include the <strong className="text-green-900">Musondas</strong> (Charles and Bilton), the <strong className="text-green-900">Mwepus</strong> (Enock and Francesco), the <strong className="text-green-900">Chamas</strong> (Clatous and Adrian), the <strong className="text-green-900">Kapumbus</strong> (Fackson and Kelvin), the <strong className="text-green-900">Chalwes</strong> (Linos, Sashi, and Songwe), and the <strong className="text-green-900">Yobes</strong> (Donwell and Dominic).
               </p>
@@ -364,10 +408,10 @@ const Legends: React.FC = () => {
         </div>
       </section>
 
-{/* THE 1993 ETERNAL LEGENDS (GABON MEMORIAL) */}
-      <section className="py-24 md:py-32 px-6 bg-white border-t-4 border-orange-600">
+      {/* THE 1993 ETERNAL LEGENDS (GABON MEMORIAL) */}
+      <section className="py-24 md:py-32 px-6 bg-gradient-to-r from-white via-orange-50/40 to-white border-t-4 border-orange-600">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-16">
-          <FadeIn className="w-full md:w-1/2 space-y-8">
+          <FadeIn className="w-full md:w-1/2 space-y-8 rounded-3xl border border-orange-100 bg-white p-8 md:p-10 shadow-lg">
             <div>
               <p className="font-sans text-orange-500 uppercase tracking-[0.4em] text-xs mb-4 font-semibold">
                 April 28, 1993
@@ -383,42 +427,46 @@ const Legends: React.FC = () => {
                 No conversation about Zambian football heritage is complete without honoring the heroes of the 1993 national team. The squad that perished off the coast of Gabon represented the very best of our nation's talent, spirit, and ambition.
               </p>
               <p>
-                They laid the spiritual foundation for the generations that followed. When Zambia lifted the Africa Cup of Nations in 2012—in the very same city of Libreville—it was the fulfillment of the dream our eternal legends started. 
+                They laid the spiritual foundation for the generations that followed. When Zambia lifted the Africa Cup of Nations in 2012 - in the very same city of Libreville - it was the fulfillment of the dream our eternal legends started.
               </p>
               <p className="text-gray-900 font-medium italic">
                 "Their names are woven into the fabric of Zambian history. Gone, but never forgotten."
               </p>
             </div>
 
-            <button className="mt-4 px-8 py-3 bg-transparent text-green-900 font-sans font-bold hover:bg-gray-50 transition-all uppercase tracking-[0.2em] text-sm border border-gray-300 hover:border-green-900 rounded-sm">
-              Visit the Memorial
-            </button>
+              <button className="mt-4 px-8 py-3 bg-white text-green-900 font-sans font-bold hover:bg-gray-100 transition-all uppercase tracking-[0.2em] text-sm border border-gray-300 hover:border-green-900 rounded-full shadow-sm hover:shadow-md">
+                Visit the Memorial
+              </button>
           </FadeIn>
 
           <FadeIn className="w-full md:w-1/2" delay={0.2}>
-            <div className="aspect-[4/3] relative rounded-lg overflow-hidden border border-gray-200 shadow-xl grayscale hover:grayscale-0 transition-all duration-1000">
+              <div className="aspect-[4/3] relative rounded-3xl overflow-hidden border border-white shadow-2xl ring-1 ring-black/5 grayscale hover:grayscale-0 transition-all duration-1000">
               <img 
                 src="https://res.cloudinary.com/dsztrq47q/image/upload/v1771497299/118631293_3237148319674190_6231397125503319875_n_jepj83.jpg" 
                 alt="1993 Zambia National Team" 
                 className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity duration-1000"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
             </div>
           </FadeIn>
         </div>
       </section>
 
       {/* THE RISE OF THE COPPER QUEENS */}
-      <section className="bg-white py-24 md:py-32 px-6 border-t border-gray-100">
+      <section className="bg-gradient-to-b from-white via-orange-50/20 to-white py-24 md:py-32 px-6 border-t border-gray-100">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-16 items-center">
           <FadeIn className="w-full md:w-1/2 order-2 md:order-1" delay={0.2}>
-            <div className="aspect-video bg-gray-50 rounded-2xl border border-gray-200 flex items-center justify-center p-8 text-center relative overflow-hidden group shadow-md hover:shadow-xl transition-shadow duration-500">
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-green-500/5 transition-all duration-700 opacity-50 group-hover:opacity-100" />
-              <div className="relative z-10">
-                <span className="text-gray-400 font-sans font-semibold tracking-wide uppercase text-sm group-hover:text-green-800 transition-colors duration-300">
-                  [ Image Placeholder: Copper Queens at Olympics/World Cup ]
-                </span>
-              </div>
+            <div className="aspect-video rounded-3xl border border-white shadow-2xl ring-1 ring-black/5 relative overflow-hidden group">
+              <img
+                src="https://res.cloudinary.com/dsztrq47q/image/upload/v1771838601/515992318_713082761545170_5863502301176627390_n.jpg_sw3ows.jpg"
+                alt="Copper Queens in action"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+              <span className="absolute left-6 bottom-6 text-white text-xs md:text-sm uppercase tracking-[0.25em] font-bold">
+                Zambia Copper Queens
+              </span>
             </div>
           </FadeIn>
           
@@ -441,7 +489,7 @@ const Legends: React.FC = () => {
       </section>
 
       {/* MULTI-SPORT ECOSYSTEM */}
-      <section className="bg-white py-24 md:py-32 px-6">
+      <section className="bg-gradient-to-b from-white to-gray-50 py-24 md:py-32 px-6 border-t border-gray-100">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-16 items-center">
           <FadeIn className="w-full md:w-1/2 space-y-8">
             <div>
@@ -455,15 +503,17 @@ const Legends: React.FC = () => {
               Zambia's unparalleled record of sporting families is not a coincidence; it is the result of a unique structural ecosystem. During the 1960s through the 1990s, mine-sponsored clubs and parastatal companies heavily promoted community sports and recreation.
             </p>
             <p className="text-gray-600 leading-relaxed text-lg">
-              This corporate backing created localized environments where facilities were central to family life. Fathers mentored sons, and brothers inspired siblings — producing legendary families such as <strong className="text-green-900">Samuel and Mwenya Matete</strong> (athletics and football), <strong className="text-green-900">Boniface, Aaron, and Amon Simutowe</strong> (football and chess), and <strong className="text-green-900">Satwant and Muna Singh</strong> (motor rally).
+              This corporate backing created localized environments where facilities were central to family life. Fathers mentored sons, and brothers inspired siblings - producing legendary families such as <strong className="text-green-900">Samuel and Mwenya Matete</strong> (athletics and football), <strong className="text-green-900">Boniface, Aaron, and Amon Simutowe</strong> (football and chess), and <strong className="text-green-900">Satwant and Muna Singh</strong> (motor rally).
             </p>
           </FadeIn>
           <FadeIn className="w-full md:w-1/2" delay={0.2}>
-            <div className="aspect-square bg-gray-100 rounded-2xl border border-gray-200 flex items-center justify-center p-8 text-center relative overflow-hidden group shadow-sm">
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-green-50 group-hover:from-orange-100 group-hover:to-green-100 transition-all duration-700 opacity-50" />
+              <div className="aspect-square bg-white rounded-3xl border border-gray-200 flex items-center justify-center p-8 text-center relative overflow-hidden group shadow-lg">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-green-50 group-hover:from-orange-100 group-hover:to-green-100 transition-all duration-700 opacity-60" />
               <div className="relative z-10">
-                <p className="font-sans text-6xl md:text-8xl font-bold text-gray-300 mb-4 drop-shadow-sm">⚽</p>
-                <span className="text-gray-500 font-sans font-semibold tracking-wide uppercase text-sm">
+                <div className="w-28 h-28 md:w-36 md:h-36 rounded-full border-2 border-dashed border-orange-300/80 mx-auto mb-6 flex items-center justify-center">
+                  <p className="font-sans text-2xl md:text-3xl font-black text-green-900 tracking-[0.2em]">FAZ</p>
+                </div>
+                <span className="text-gray-500 font-sans font-semibold tracking-wide uppercase text-xs md:text-sm">
                   Archival Photo Coming Soon
                 </span>
               </div>
@@ -472,25 +522,24 @@ const Legends: React.FC = () => {
         </div>
       </section>
 
-     
-
       {/* QUOTE & CTA */}
-      <section className="py-24 md:py-32 px-6 bg-gray-50 text-center relative overflow-hidden">
+      <section className="py-24 md:py-32 px-6 bg-gradient-to-br from-green-900 via-green-800 to-green-900 text-center relative overflow-hidden">
+        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[520px] h-[520px] rounded-full bg-orange-400/15 blur-3xl pointer-events-none" />
         <FadeIn>
           <div className="max-w-4xl mx-auto relative z-10">
             <p className="font-sans text-orange-200 text-6xl md:text-8xl leading-none mb-8 font-serif">"</p>
-            <blockquote className="text-2xl md:text-4xl font-light italic text-gray-800 mb-14 leading-relaxed -mt-8">
+            <blockquote className="text-2xl md:text-4xl font-light italic text-white mb-14 leading-relaxed -mt-8">
               Zambia's football story transcends victories and trophies; it is an enduring heritage of generational excellence.
             </blockquote>
             
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <button className="px-10 py-4 bg-orange-600 text-white font-sans font-bold hover:bg-orange-700 transition-all uppercase tracking-[0.2em] text-sm shadow-lg shadow-orange-600/20 hover:-translate-y-1 rounded-sm">
+              <button className="px-10 py-4 bg-orange-500 text-white font-sans font-bold hover:bg-orange-400 transition-all uppercase tracking-[0.2em] text-sm shadow-lg shadow-orange-900/30 hover:-translate-y-1 rounded-full">
                 Explore the Hall of Fame
               </button>
-              <button className="px-10 py-4 bg-white text-green-900 font-sans font-bold hover:bg-gray-100 transition-all uppercase tracking-[0.2em] text-sm border border-gray-200 shadow-sm rounded-sm">
+              <button className="px-10 py-4 bg-white/95 text-green-900 font-sans font-bold hover:bg-white transition-all uppercase tracking-[0.2em] text-sm border border-white/40 shadow-sm hover:-translate-y-1 rounded-full">
                 View Historical Squads
               </button>
-              <button className="px-10 py-4 bg-white text-green-900 font-sans font-bold hover:bg-gray-100 transition-all uppercase tracking-[0.2em] text-sm border border-gray-200 shadow-sm rounded-sm">
+              <button className="px-10 py-4 bg-white/95 text-green-900 font-sans font-bold hover:bg-white transition-all uppercase tracking-[0.2em] text-sm border border-white/40 shadow-sm hover:-translate-y-1 rounded-full">
                 Nominate a Legend
               </button>
             </div>
