@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 type DashboardView = "matches" | "results" | "standings";
 type TeamCategory = "All" | "Men" | "Women" | "U15" | "U17" | "U20" | "U23";
@@ -42,6 +43,11 @@ interface StandingsGroup {
   group: string;
   rows: StandingRow[];
 }
+
+const parseDateValue = (value: string): number => {
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
+};
 
 const categories: TeamCategory[] = ["All", "Men", "Women", "U15", "U17", "U20", "U23"];
 
@@ -518,23 +524,27 @@ const Fixtures: React.FC = () => {
   }, []);
 
   const filteredFixtures = useMemo(() => {
-    return upcomingFixtures.filter((item) => {
+    const selected = upcomingFixtures.filter((item) => {
       const categoryMatch = activeCategory === "All" || item.category === activeCategory;
       const tournamentMatch =
         activeTournament === "All Tournaments" || item.tournament === activeTournament;
       const yearMatch = activeYear === "All Years" || item.year === activeYear;
       return categoryMatch && tournamentMatch && yearMatch;
     });
+
+    return [...selected].sort((a, b) => parseDateValue(a.date) - parseDateValue(b.date));
   }, [activeCategory, activeTournament, activeYear]);
 
   const filteredResults = useMemo(() => {
-    return matchResults.filter((item) => {
+    const selected = matchResults.filter((item) => {
       const categoryMatch = activeCategory === "All" || item.category === activeCategory;
       const tournamentMatch =
         activeTournament === "All Tournaments" || item.tournament === activeTournament;
       const yearMatch = activeYear === "All Years" || item.year === activeYear;
       return categoryMatch && tournamentMatch && yearMatch;
     });
+
+    return [...selected].sort((a, b) => parseDateValue(b.date) - parseDateValue(a.date));
   }, [activeCategory, activeTournament, activeYear]);
 
   const filteredStandings = useMemo(() => {
@@ -547,22 +557,50 @@ const Fixtures: React.FC = () => {
     });
   }, [activeCategory, activeTournament, activeYear]);
 
+  const nextMatch = filteredFixtures[0];
+
+  useEffect(() => {
+    setVisibleFixtureCount(4);
+    setVisibleResultCount(4);
+  }, [activeCategory, activeTournament, activeYear, activeView]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 text-gray-900">
-      <section className="border-b border-gray-200 bg-white/90">
-        <div className="mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-10">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-faz-orange">Fixtures Dashboard</p>
-          <h1 className="mt-2 text-3xl font-black uppercase tracking-tight text-faz-green md:text-4xl">
-            Matches, Results and Standings
-          </h1>
-          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-gray-600 md:text-base">
-            Follow Zambia national teams and competitions with a unified match centre experience.
-            Filter by squad category, tournament and year for faster navigation.
-          </p>
+      {/* Hero Section */}
+      <div className="relative h-[500px] md:h-[600px] overflow-hidden">
+        <img 
+          src="https://res.cloudinary.com/djuz1gf78/image/upload/v1769085842/fazPhoto1_g4eo3r.jpg"
+          alt="FAZ Heritage"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent flex items-center">
+          <div className="max-w-[1440px] mx-auto px-4 md:px-12 w-full">
+            <div className="max-w-2xl">
+              <h1 className="text-5xl md:text-6xl font-condensed font-black text-white uppercase tracking-tighter leading-none mb-6">
+                Fixtures, Results <br />and Standings
+              </h1>
+              <p className="text-lg md:text-xl text-gray-100 mb-8 leading-relaxed max-w-xl">
+                Track every Zambia national team match from kick-off schedules to final scores and current group standings in one unified match centre.
+              </p>
+              <Link
+                to="/fixtures#fixtures-dashboard"
+                className="inline-block px-8 py-4 bg-faz-orange hover:bg-faz-orange/90 text-white font-black uppercase tracking-widest text-sm transition-all transform hover:scale-105 shadow-lg"
+              >
+                Explore Match Centre
+              </Link>
+              {nextMatch && (
+                <div className="mt-6 inline-flex flex-col rounded-lg border border-white/30 bg-black/30 px-4 py-3 text-white backdrop-blur-sm">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-300">Next Match</p>
+                  <p className="text-sm font-bold">{nextMatch.homeTeam} vs {nextMatch.awayTeam}</p>
+                  <p className="text-xs text-white/85">{nextMatch.date} | {nextMatch.time} | {nextMatch.venue}</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      </section>
+      </div>
 
-      <section className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8">
+      <section id="fixtures-dashboard" className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8">
         <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:p-6">
           <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-4">
             <button type="button" className={tabButtonClass(activeView === "matches")} onClick={() => setActiveView("matches")}>

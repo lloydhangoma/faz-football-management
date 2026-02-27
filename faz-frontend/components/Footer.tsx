@@ -3,10 +3,15 @@ import { Facebook, Twitter, Instagram, Youtube, Mail, Phone, MapPin } from 'luci
 import { Link } from 'react-router-dom';
 
 const Footer: React.FC = () => {
-  const CLUB_LOGO = "https://upload.wikimedia.org/wikipedia/en/0/06/Football_Association_of_Zambia_logo.png";
+  const CLUB_LOGO = "https://res.cloudinary.com/digaq48bp/image/upload/v1758265423/football-association-of-zambia-logo_oe9kyd.png";
 
   return (
-    <footer className="bg-green-900 text-white/90 pt-20 pb-10">
+    <footer className="relative overflow-hidden bg-green-900 text-white/90 pt-20 pb-10">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 right-0 w-[360px] bg-no-repeat bg-right-bottom opacity-[0.07]"
+        style={{ backgroundImage: `url(${CLUB_LOGO})`, backgroundSize: "280px" }}
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           
@@ -16,7 +21,7 @@ const Footer: React.FC = () => {
               <img 
                 src={CLUB_LOGO} 
                 alt="FAZ" 
-                className="w-16 h-16 brightness-0 invert opacity-90 hover:opacity-100 transition"
+                className="w-16 h-16 object-contain opacity-95 hover:opacity-100 transition"
               />
               <div className="leading-tight">
                 <span className="block text-white font-condensed text-xl uppercase tracking-tighter">Football Association</span>

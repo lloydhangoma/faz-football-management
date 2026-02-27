@@ -189,8 +189,13 @@ export default function Navbar() {
                                             </NavLink>
 
                                             {item.dropdown && isOpen && (
-                                                <div className="absolute top-full left-0 w-max min-w-[240px] bg-white border border-gray-100 shadow-xl z-[100]">
-                                                    <div className="p-4 space-y-4">
+                                                <div className="absolute top-full left-0 w-max min-w-[240px] bg-white border border-gray-100 shadow-xl z-[100] overflow-hidden">
+                                                    <div
+                                                        aria-hidden="true"
+                                                        className="pointer-events-none absolute inset-0 bg-no-repeat bg-right-bottom opacity-[0.07]"
+                                                        style={{ backgroundImage: `url(${CLUB_LOGO})`, backgroundSize: "130px" }}
+                                                    />
+                                                    <div className="relative p-4 space-y-4">
                                                         {item.dropdown.map(cat => (
                                                             <div key={cat.title}>
                                                                 <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-4">{cat.title}</h4>
