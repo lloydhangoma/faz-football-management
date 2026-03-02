@@ -74,7 +74,7 @@ const newsArticles: NewsArticle[] = [
     title: "Chipolopolo Begin Preparations for AFCON Qualifiers",
     excerpt:
       "Head coach names provisional 28-man squad as Zambia intensifies preparations for the upcoming Africa Cup of Nations qualifiers.",
-    imageUrl: "https://images.unsplash.com/photo-1546519638-68e109498ffc",
+    imageUrl: "https://res.cloudinary.com/dsztrq47q/image/upload/v1772437506/605366955_1421424676308022_2807050073111330370_n.jpg_nszmmf.jpg",
     link: "/news/afcon-qualifier-preparations",
   },
   {
@@ -134,7 +134,7 @@ const newsArticles: NewsArticle[] = [
     title: "Fashion Sakala Returns to National Duty",
     excerpt:
       "Forward Fashion Sakala rejoins the Chipolopolo squad ahead of the upcoming international window.",
-    imageUrl: "https://images.unsplash.com/photo-1543353071-873f17a7a088",
+    imageUrl: "https://res.cloudinary.com/dsztrq47q/image/upload/v1772440512/fasion_mcrf9x.jpg",
     link: "/news/sakala-returns",
   },
   {
@@ -144,7 +144,7 @@ const newsArticles: NewsArticle[] = [
     title: "FAZ Talent Identification Program Expands to Western Province",
     excerpt:
       "The FAZ scouting network continues its expansion with new talent identification centers in Western Province.",
-    imageUrl: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b",
+    imageUrl: "https://res.cloudinary.com/dsztrq47q/image/upload/v1772438151/593920210_1404820961301727_929382674540752009_n.jpg_bln2h3.jpg",
     link: "/news/talent-expansion",
   },
   {
@@ -154,7 +154,7 @@ const newsArticles: NewsArticle[] = [
     title: "Women's Super League Kicks Off in March",
     excerpt:
       "FAZ confirms March kickoff for the 2026 Women's Super League season with increased sponsorship backing.",
-    imageUrl: "https://images.unsplash.com/photo-1494173853739-c21f58b16055",
+    imageUrl: "https://res.cloudinary.com/dsztrq47q/image/upload/v1772440592/596948619_1404933457957144_7314629913654405710_n.jpg_wbsjx2.jpg",
     link: "/news/womens-super-league",
   },
   {
@@ -164,7 +164,7 @@ const newsArticles: NewsArticle[] = [
     title: "FAZ President Addresses Annual General Meeting",
     excerpt:
       "Key reforms and strategic objectives outlined during the 2026 FAZ Annual General Meeting in Lusaka.",
-    imageUrl: "https://images.unsplash.com/photo-1503428593586-e225b39bddfe",
+    imageUrl: "https://res.cloudinary.com/dsztrq47q/image/upload/v1772440666/593349800_1401375014979655_6141681129521669048_n.jpg_socm44.jpg",
     link: "/news/faz-agm-2026",
   },
   {
@@ -184,7 +184,7 @@ const newsArticles: NewsArticle[] = [
     title: "Grace Chanda Signs New European Deal",
     excerpt:
       "Copper Queens midfielder Grace Chanda secures a new contract with her European club.",
-    imageUrl: "https://images.unsplash.com/photo-1522778119026-d647f0596c20",
+    imageUrl: "https://res.cloudinary.com/dsztrq47q/image/upload/v1772440754/591483614_1400340731749750_4851684308843829181_n.jpg_dkxtxu.jpg",
     link: "/news/grace-chanda-deal",
   },
   {
@@ -194,7 +194,7 @@ const newsArticles: NewsArticle[] = [
     title: "U-23 Team Announces Olympic Qualifier Squad",
     excerpt:
       "The Zambia U-23 side names a 25-player squad ahead of the Olympic qualifying tournament.",
-    imageUrl: "https://images.unsplash.com/photo-1471295253337-3ceaaedca402",
+    imageUrl: "https://res.cloudinary.com/dsztrq47q/image/upload/v1772437175/626775757_1447411627042660_8931373495200186766_n.jpg_exinnu.jpg",
     link: "/news/u23-olympic-qualifiers",
   },
   {
@@ -204,7 +204,7 @@ const newsArticles: NewsArticle[] = [
     title: "ABSA Cup Quarterfinal Draw Conducted",
     excerpt:
       "The quarterfinal fixtures for the 2026 ABSA Cup have been officially drawn at Football House.",
-    imageUrl: "https://images.unsplash.com/photo-1508098682722-e99c643e7f0b",
+    imageUrl: "https://res.cloudinary.com/dsztrq47q/image/upload/v1772440999/642210098_1481468383978731_3672138428812728025_n.jpg_kg2ptr.jpg",
     link: "/news/absa-quarterfinal-draw",
   },
   {
@@ -214,7 +214,7 @@ const newsArticles: NewsArticle[] = [
     title: "FAZ Introduces VAR Training Workshop",
     excerpt:
       "Match officials undergo intensive Video Assistant Referee (VAR) training ahead of full implementation.",
-    imageUrl: "https://images.unsplash.com/photo-1492724441997-5dc865305da7",
+    imageUrl: "https://res.cloudinary.com/dsztrq47q/image/upload/v1772440898/583112606_1390536886063468_1367388956339094169_n.jpg_cd0zna.jpg",
     link: "/news/var-workshop",
   },
 ];
