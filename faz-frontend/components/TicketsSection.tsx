@@ -38,6 +38,8 @@ const sampleTickets = [
 ];
 
 const TicketsSection: React.FC = () => {
+  const TICKET_URL = "https://eticket.zbench.online/";
+
   return (
     <section className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-6">
@@ -48,9 +50,13 @@ const TicketsSection: React.FC = () => {
             <h2 className="text-4xl md:text-5xl font-black text-slate-900 uppercase tracking-tighter leading-none">
               Tickets
             </h2>
-            <button className="flex items-center gap-1 text-[#f97316] font-bold text-sm md:text-base uppercase group transition-colors hover:text-green-700">
+            {/* UPDATED: Buy Tickets Button now leads to the URL */}
+            <a 
+              href={TICKET_URL}
+              className="flex items-center gap-1 text-[#f97316] font-bold text-sm md:text-base uppercase group transition-colors hover:text-green-700"
+            >
               Buy Tickets <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
-            </button>
+            </a>
           </div>
           {/* Custom Fading Divider */}
           <div className="h-[4px] w-full bg-gradient-to-r from-[#f97316] via-[#f97316]/60 to-transparent" />
@@ -102,9 +108,12 @@ const TicketsSection: React.FC = () => {
                   <p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest mb-0.5">Starting From</p>
                   <p className="text-2xl font-black text-slate-900">{t.price}</p>
                 </div>
-                <button className="bg-slate-900 text-white px-5 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider hover:bg-[#f97316] transition-all shadow-md active:scale-95">
-                  Select Seats
-                </button>
+                {/* UPDATED: Select Seats Button now leads to the URL */}
+                <a href={TICKET_URL}>
+                    <button className="bg-slate-900 text-white px-5 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wider hover:bg-[#f97316] transition-all shadow-md active:scale-95">
+                    Select Seats
+                    </button>
+                </a>
               </div>
             </div>
           ))}
